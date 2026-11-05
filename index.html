@@ -321,7 +321,7 @@ body:has(#inkPanel:not([hidden])) .notes{padding-bottom:calc(136px + env(safe-ar
       </div>
     </div>
     <p class="err" id="bkErr" hidden></p>
-    <div class="actions"><span class="ver" style="margin-right:auto;align-self:center">Agenda 1.2</span><button class="btn" id="menuClose">Chiudi</button></div>
+    <div class="actions"><span class="ver" style="margin-right:auto;align-self:center">Agenda 1.3</span><button class="btn" id="menuClose">Chiudi</button></div>
   </div>
 </div>
 
@@ -598,7 +598,13 @@ function weekLabel(k){
     : `${mon.getDate()} ${fmt(mon,{month:'short'})} – ${sun.getDate()} ${fmt(sun,{month:'short'})}`;
   return {title:`Settimana ${isoWeek(mon)}`, range};
 }
-function showPointsWeek(k){ ptsWeek = k; $('points').scrollTop = 0; renderPoints(); }
+// Cambiando settimana nel foglio dei punti si spostano sulla stessa settimana anche i giorni a sinistra
+// e il calendario (resta selezionato lo stesso giorno della settimana; nella settimana in corso, oggi).
+function showPointsWeek(k){
+  ptsWeek = k; $('points').scrollTop = 0;
+  const dow = (fromKey(sel).getDay() + 6) % 7;
+  selectDay(k === curWeek() ? keyOf(today) : keyOf(addDays(fromKey(k), dow)));
+}
 $('ptsPrev').onclick = () => showPointsWeek(keyOf(addDays(fromKey(ptsWeek), -7)));
 $('ptsNext').onclick = () => showPointsWeek(keyOf(addDays(fromKey(ptsWeek), 7)));
 $('ptsNow').onclick  = () => showPointsWeek(curWeek());
