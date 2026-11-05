@@ -2,7 +2,7 @@
    Pagina: prima la rete (così ricevi gli aggiornamenti), se manca la connessione la copia salvata.
    Icone e manifest: dalla copia salvata.
    Quando pubblichi una nuova versione, cambia il numero qui sotto. */
-const CACHE = 'agenda-v6';
+const CACHE = 'agenda-v7';
 const ASSETS = ['./', './index.html'];
 
 self.addEventListener('install', e => {

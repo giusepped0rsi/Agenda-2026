@@ -74,6 +74,13 @@ textarea,input{font:inherit;font-size:16px;color:var(--text)}
 .bk-confirm{border:1px solid var(--danger);border-radius:12px;padding:12px 14px;display:flex;flex-direction:column;gap:10px}
 .bk-confirm p{margin:0;line-height:1.5}
 .ver{font-family:var(--f-mono);font-size:12px;color:var(--muted)}
+.snap-row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.snap-row select{flex:1;min-width:200px}
+.daybanner{position:fixed;left:50%;transform:translateX(-50%);top:calc(64px + env(safe-area-inset-top,0px));z-index:65;width:max-content;max-width:calc(100% - 32px);
+  display:flex;align-items:center;gap:12px;flex-wrap:wrap;background:var(--surface);border:1px solid var(--ink);border-radius:14px;padding:10px 10px 10px 16px;box-shadow:var(--shadow)}
+.daybanner p{margin:0;font-size:14px;line-height:1.4}
+.daybanner p strong{font-weight:600}
+.daybanner .icon-btn{width:36px;height:36px}
 .main-btn{height:44px;padding:0 20px;border-radius:12px;border:1.5px solid var(--ink);background:var(--surface);color:var(--ink);font-weight:600;letter-spacing:.06em;font-size:14px;text-transform:uppercase}
 .main-btn.primary{background:var(--ink);color:var(--surface)}
 
@@ -308,6 +315,13 @@ body:has(#inkPanel:not([hidden])) .notes{padding-bottom:calc(136px + env(safe-ar
     <h3 id="bkTitle">Backup</h3>
     <p class="bk-text" id="bkInfo"></p>
     <p class="bk-text" id="persistInfo"></p>
+    <div class="field">
+      <span class="lbl">Copie automatiche (una al giorno, ultime 30)</span>
+      <div class="snap-row">
+        <select class="inp" id="snapSel" aria-label="Copia automatica da ripristinare"></select>
+        <button class="btn" id="snapRestore">Ripristina questa copia</button>
+      </div>
+    </div>
     <div class="actions" style="justify-content:flex-start">
       <button class="btn primary" id="bkExport">Salva backup</button>
       <button class="btn" id="bkImport">Ripristina da file…</button>
@@ -321,8 +335,15 @@ body:has(#inkPanel:not([hidden])) .notes{padding-bottom:calc(136px + env(safe-ar
       </div>
     </div>
     <p class="err" id="bkErr" hidden></p>
-    <div class="actions"><span class="ver" style="margin-right:auto;align-self:center">Agenda 1.5</span><button class="btn" id="appUpdate">Aggiorna app</button><button class="btn" id="menuClose">Chiudi</button></div>
+    <div class="actions"><span class="ver" style="margin-right:auto;align-self:center">Agenda 1.6</span><button class="btn" id="appUpdate">Aggiorna app</button><button class="btn" id="menuClose">Chiudi</button></div>
   </div>
+</div>
+
+<!-- AVVISO DEL BACKUP GIORNALIERO -->
+<div class="daybanner" id="dayBanner" hidden role="status">
+  <p><strong>Backup di oggi pronto.</strong> Copia automatica salvata nell’app.</p>
+  <button class="btn primary" id="dbSave">Salva in File</button>
+  <button class="icon-btn" id="dbClose" aria-label="Chiudi l'avviso">×</button>
 </div>
 
 <!-- BLOCCO NOTE -->
@@ -800,8 +821,8 @@ function checkDay(){
     if(wasToday) selectDay(keyOf(today)); else renderAll();
   }
 }
-setInterval(checkDay, 60000);
-document.addEventListener('visibilitychange', () => { if(document.visibilityState === 'visible') checkDay(); });
+setInterval(() => { checkDay(); dailyBackup(); }, 60000);
+document.addEventListener('visibilitychange', () => { if(document.visibilityState === 'visible'){ checkDay(); dailyBackup(); } });
 window.addEventListener('resize', () => { document.querySelectorAll('.point textarea,.memo').forEach(grow); if(!$('notes').hidden) sizeSheet(); inks.forEach(o=>o.size()); });
 
 /* =========================================================
@@ -1186,29 +1207,31 @@ async function updatePersistUI(){
 }
 function openMenu(){
   $('bkConfirm').hidden = true; $('bkErr').hidden = true;
-  updateBackupUI(); updatePersistUI(); $('menuOverlay').hidden = false;
+  updateBackupUI(); updatePersistUI(); fillSnapshots(); $('menuOverlay').hidden = false;
 }
 $('openMenu').onclick = openMenu;
 $('menuClose').onclick = () => { $('menuOverlay').hidden = true; };
 $('menuOverlay').addEventListener('pointerdown', e => { if(e.target.id === 'menuOverlay') $('menuOverlay').hidden = true; });
 
-$('bkExport').onclick = async () => {
+async function exportBackup(){
   writeNow();
   const name = `Agenda-backup-${keyOf(new Date())}.json`;
   const json = JSON.stringify({app:'agenda-ipad', version:1, exportedAt:new Date().toISOString(), data});
   const file = new File([json], name, {type:'application/json'});
-  const done = () => { data.lastBackup = Date.now(); writeNow(); updateBackupUI(); };
+  const done = () => { data.lastBackup = Date.now(); writeNow(); updateBackupUI(); updateBanner(); };
   try{
     if (navigator.canShare && navigator.canShare({files:[file]})){   // iPad: foglio Condividi → "Salva su File"
       await navigator.share({files:[file], title:name});
-      done(); toast('Backup salvato'); return;
+      done(); toast('Backup salvato in File'); return true;
     }
   }catch(e){ if (e && e.name === 'AbortError') return; }
   const a = document.createElement('a');
   a.href = URL.createObjectURL(file); a.download = name; document.body.append(a); a.click();
   setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 3000);
   done(); toast('Backup scaricato: lo trovi in File → Download');
-};
+  return true;
+}
+$('bkExport').onclick = exportBackup;
 
 let pending = null;
 $('bkImport').onclick = () => { $('bkFile').value = ''; $('bkFile').click(); };
@@ -1250,11 +1273,63 @@ $('appUpdate').onclick = async () => {
 $('bkCancel').onclick = () => { pending = null; $('bkConfirm').hidden = true; };
 $('bkApply').onclick = () => {
   if (!pending) return;
+  const keepAuto = data.lastAutoDay, keepOff = data.bannerOff, keepLb = data.lastBackup;
   data = pending; pending = null;
+  data.lastAutoDay = keepAuto; data.bannerOff = keepOff; data.lastBackup = keepLb;
   data.ink ||= {}; data.days ||= {}; migratePoints(); if (!data.notes.length) data.notes.push({id:Date.now(), text:'', created:Date.now()});
   undoStack.length = 0; redoStack.length = 0; updUndo(); lastInk = null;
   writeNow(); renderAll(); if (!$('notes').hidden) renderNotes();
-  $('menuOverlay').hidden = true; toast('Dati ripristinati dal backup');
+  $('menuOverlay').hidden = true; updateBanner(); toast('Dati ripristinati dal backup');
+};
+
+/* ---------- Backup giornaliero automatico ----------
+   Alla prima apertura dopo le 6:00 (anche riprendendo l'app dal background) l'app salva da sola
+   una copia completa al suo interno e propone, con un tocco, di salvarla anche in File.
+   iPadOS non permette a un'app web di scrivere in File senza conferma. */
+const DAY_HOUR = 6, SNAP_MAX = 30;
+function idbReq(mode, fn){
+  return getDB().then(db => new Promise(res => {
+    if (!db) return res(null);
+    try{ const q = fn(db.transaction(IDB_STORE, mode).objectStore(IDB_STORE)); q.onsuccess = () => res(q.result); q.onerror = () => res(null); }catch(e){ res(null); }
+  }));
+}
+const snapKeys = async () => ((await idbReq('readonly', st => st.getAllKeys())) || []).filter(k => String(k).startsWith('snap-')).sort();
+async function makeSnapshot(dayKey){
+  await idbReq('readwrite', st => st.put(JSON.parse(JSON.stringify(data)), 'snap-' + dayKey));
+  const keys = await snapKeys();
+  for (const old of keys.slice(0, Math.max(0, keys.length - SNAP_MAX))) await idbReq('readwrite', st => st.delete(old));
+}
+let dailyBusy = false;
+async function dailyBackup(){
+  const now = new Date();
+  if (now.getHours() < DAY_HOUR || dailyBusy) return;
+  const tk = keyOf(now);
+  if (data.lastAutoDay !== tk){
+    dailyBusy = true;
+    try{ writeNow(); await makeSnapshot(tk); data.lastAutoDay = tk; writeNow(); }
+    finally{ dailyBusy = false; }
+  }
+  updateBanner(); updateBackupUI();
+}
+function updateBanner(){
+  const tk = keyOf(new Date());
+  const savedToday = data.lastBackup && keyOf(new Date(data.lastBackup)) === tk && new Date(data.lastBackup).getHours() >= DAY_HOUR;
+  $('dayBanner').hidden = !(data.lastAutoDay === tk && !savedToday && data.bannerOff !== tk);
+}
+$('dbSave').onclick = async () => { if (await exportBackup()) $('dayBanner').hidden = true; };
+$('dbClose').onclick = () => { data.bannerOff = keyOf(new Date()); save(); updateBanner(); };
+async function fillSnapshots(){
+  const sel = $('snapSel'), keys = (await snapKeys()).reverse();
+  sel.replaceChildren(...(keys.length ? keys.map(k => { const o = el('option', null, fmt(fromKey(k.slice(5)), {weekday:'long', day:'numeric', month:'long', year:'numeric'})); o.value = k; return o; })
+                                     : [el('option', null, 'Nessuna copia ancora')]));
+  sel.disabled = $('snapRestore').disabled = !keys.length;
+}
+$('snapRestore').onclick = async () => {
+  const k = $('snapSel').value; if (!k || !k.startsWith('snap-')) return;
+  const d = await idbReq('readonly', st => st.get(k)); if (!d) return;
+  pending = d;
+  $('bkSummary').textContent = `Copia automatica di ${fmt(fromKey(k.slice(5)),{weekday:'long', day:'numeric', month:'long'})}: ${d.events.length} eventi, ${d.notes.length} fogli di note, ${Object.keys(d.weeks||{}).length} settimane di punti. I dati attuali verranno sostituiti.`;
+  $('bkConfirm').hidden = false; $('bkErr').hidden = true;
 };
 
 // All'avvio: se IndexedDB ha una copia più recente (o localStorage è stato svuotato) la si usa
@@ -1262,6 +1337,7 @@ idbGet().then(d => {
   if (d && (d.savedAt || 0) > (data.savedAt || 0)){ data = d; migratePoints(); ptsWeek = curWeek(); renderAll(); }
   else writeNow();
   updateBackupUI();
+  dailyBackup();
 });
 // Chiede all'iPad di non cancellare mai i dati
 try{ if (navigator.storage && navigator.storage.persist) navigator.storage.persisted().then(p => p || navigator.storage.persist()); }catch(e){}
