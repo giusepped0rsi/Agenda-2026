@@ -321,7 +321,7 @@ body:has(#inkPanel:not([hidden])) .notes{padding-bottom:calc(136px + env(safe-ar
       </div>
     </div>
     <p class="err" id="bkErr" hidden></p>
-    <div class="actions"><span class="ver" style="margin-right:auto;align-self:center">Agenda 1.4</span><button class="btn" id="appUpdate">Aggiorna app</button><button class="btn" id="menuClose">Chiudi</button></div>
+    <div class="actions"><span class="ver" style="margin-right:auto;align-self:center">Agenda 1.5</span><button class="btn" id="appUpdate">Aggiorna app</button><button class="btn" id="menuClose">Chiudi</button></div>
   </div>
 </div>
 
@@ -601,7 +601,6 @@ function weekLabel(k){
 // Cambiando settimana nel foglio dei punti si spostano sulla stessa settimana anche i giorni a sinistra
 // e il calendario (resta selezionato lo stesso giorno della settimana; nella settimana in corso, oggi).
 function showPointsWeek(k){
-  ptsWeek = k; $('points').scrollTop = 0;
   const dow = (fromKey(sel).getDay() + 6) % 7;
   selectDay(k === curWeek() ? keyOf(today) : keyOf(addDays(fromKey(k), dow)));
 }
@@ -650,6 +649,9 @@ function pointRow(dd, i){
 function selectDay(k){
   sel = k;
   const d = fromKey(k);
+  // collegamento a due vie: il foglio dei punti segue sempre la settimana mostrata a sinistra
+  const w = keyOf(mondayOf(d));
+  if (w !== ptsWeek){ ptsWeek = w; $('points').scrollTop = 0; }
   calMonth = new Date(d.getFullYear(), d.getMonth(), 1);
   renderAll();
 }
