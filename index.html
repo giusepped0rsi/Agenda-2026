@@ -117,9 +117,12 @@ textarea,input{font:inherit;font-size:16px;color:var(--text)}
 
 /* ---------- Lista numerata ---------- */
 .right{min-height:0;display:flex;flex-direction:column}
-.right-head{display:flex;align-items:baseline;gap:10px;padding:12px 16px 8px;border-bottom:1px solid var(--rule)}
+.right-head{display:flex;align-items:center;gap:8px;padding:8px 12px 8px 16px;border-bottom:1px solid var(--rule)}
 .right-head h2{margin:0;font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);font-weight:600}
-.right-head .date{font-family:var(--f-display);font-size:20px;font-weight:500;color:var(--ink);text-transform:capitalize}
+.right-head .date{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-family:var(--f-display);font-size:19px;font-weight:500;color:var(--ink)}
+.right-head .date small{font-family:var(--f-body);font-size:13px;color:var(--muted);font-weight:400;margin-left:6px}
+.right-head .icon-btn{width:32px;height:32px;font-size:16px;flex:none}
+.right-head .ghost{height:32px;font-size:13px;flex:none}
 .points{flex:1;min-height:0;overflow-y:auto;list-style:none;margin:0;padding:4px 16px 16px;-webkit-overflow-scrolling:touch}
 .point{display:grid;grid-template-columns:36px minmax(0,1fr);gap:10px;align-items:start;border-bottom:1px solid var(--rule);padding:6px 0}
 .num{width:30px;height:30px;border-radius:50%;border:1.5px solid var(--ink);background:none;color:var(--ink);font-family:var(--f-mono);font-size:13px;font-variant-numeric:tabular-nums;display:grid;place-items:center;margin-top:1px}
@@ -265,6 +268,9 @@ body:has(#inkPanel:not([hidden])) .notes{padding-bottom:calc(136px + env(safe-ar
     <section class="right" aria-label="Punti della giornata">
       <div class="right-head">
         <h2>Punti</h2><span class="date" id="pointsDate"></span>
+        <button class="icon-btn" id="ptsPrev" aria-label="Settimana precedente dei punti">‹</button>
+        <button class="ghost" id="ptsNow" hidden>Questa settimana</button>
+        <button class="icon-btn" id="ptsNext" aria-label="Settimana successiva dei punti">›</button>
       </div>
       <ol class="points" id="points"></ol>
     </section>
@@ -315,7 +321,7 @@ body:has(#inkPanel:not([hidden])) .notes{padding-bottom:calc(136px + env(safe-ar
       </div>
     </div>
     <p class="err" id="bkErr" hidden></p>
-    <div class="actions"><span class="ver" style="margin-right:auto;align-self:center">Agenda 1.1</span><button class="btn" id="menuClose">Chiudi</button></div>
+    <div class="actions"><span class="ver" style="margin-right:auto;align-self:center">Agenda 1.2</span><button class="btn" id="menuClose">Chiudi</button></div>
   </div>
 </div>
 
@@ -430,13 +436,42 @@ async function idbPut(v){
   const db = await getDB(); if(!db) return false;
   return new Promise(res => { try{ const tx = db.transaction(IDB_STORE, 'readwrite'); tx.objectStore(IDB_STORE).put(v, 'data'); tx.oncomplete = () => res(true); tx.onerror = () => res(false); }catch(e){ res(false); } });
 }
-function newData(){ return {events:[], days:{}, notes:[{id:Date.now(), text:'', created:Date.now()}], noteIdx:0, savedAt:0}; }
+/* I punti a destra sono un foglio per settimana (data.weeks), indipendente dal calendario.
+   Le versioni precedenti li salvavano per giorno: qui vengono spostati nella settimana a cui appartenevano. */
+function migratePoints(){
+  data.ink ||= {};
+  if (data.weeks) return;
+  data.weeks = {};
+  const byWeek = {};
+  for (const [k, dd] of Object.entries(data.days || {})){
+    const hasText = (dd.list || []).some(t => t && t.trim());
+    if (!hasText && !(data.ink['p:'+k] || []).length) continue;
+    (byWeek[keyOf(mondayOf(fromKey(k)))] ||= []).push(k);
+  }
+  for (const [w, days] of Object.entries(byWeek)){
+    days.sort();
+    if (days.length === 1){
+      const dd = data.days[days[0]];
+      data.weeks[w] = {list:(dd.list||[]).slice(), done:(dd.done||[]).slice(), extra:{...(dd.extra||{})}};
+      if (data.ink['p:'+days[0]]) data.ink['pw:'+w] = data.ink['p:'+days[0]];
+    } else {
+      const list = [], done = [];
+      for (const k of days){
+        const dd = data.days[k];
+        (dd.list || []).forEach((t, i) => { if (t && t.trim()){ if ((dd.done||[]).includes(i)) done.push(list.length); list.push(t); } });
+      }
+      data.weeks[w] = {list, done, extra:{}};
+    }
+  }
+}
+function newData(){ return {events:[], days:{}, weeks:{}, notes:[{id:Date.now(), text:'', created:Date.now()}], noteIdx:0, savedAt:0}; }
 let mem = null;
 function load(){
   try{ const r = localStorage.getItem(KEY); if(r) return JSON.parse(r); }catch(e){}
   return mem || null;
 }
 let data = load() || newData();
+migratePoints();
 let saveT;
 function writeNow(){
   clearTimeout(saveT);
@@ -545,11 +580,33 @@ function renderCal(){
   }
 }
 
-/* ---------- Lista numerata (parte destra) ---------- */
+/* ---------- Lista numerata (parte destra): un foglio per settimana ----------
+   Non dipende dal giorno scelto nel calendario. Ogni lunedì si apre un foglio vuoto;
+   i fogli delle settimane passate restano salvati e si sfogliano con le frecce. */
+const weekData = k => ((data.weeks ||= {})[k] ||= {list:[], done:[], extra:{}});
+const curWeek = () => keyOf(mondayOf(today));
+let ptsWeek = curWeek();
+function isoWeek(d){
+  const t = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
+  t.setUTCDate(t.getUTCDate() + 4 - (t.getUTCDay() || 7));
+  return Math.ceil(((t - new Date(Date.UTC(t.getUTCFullYear(), 0, 1))) / 864e5 + 1) / 7);
+}
+function weekLabel(k){
+  const mon = fromKey(k), sun = addDays(mon, 6);
+  const range = mon.getMonth() === sun.getMonth()
+    ? `${mon.getDate()}–${sun.getDate()} ${fmt(sun,{month:'long'})}`
+    : `${mon.getDate()} ${fmt(mon,{month:'short'})} – ${sun.getDate()} ${fmt(sun,{month:'short'})}`;
+  return {title:`Settimana ${isoWeek(mon)}`, range};
+}
+function showPointsWeek(k){ ptsWeek = k; $('points').scrollTop = 0; renderPoints(); }
+$('ptsPrev').onclick = () => showPointsWeek(keyOf(addDays(fromKey(ptsWeek), -7)));
+$('ptsNext').onclick = () => showPointsWeek(keyOf(addDays(fromKey(ptsWeek), 7)));
+$('ptsNow').onclick  = () => showPointsWeek(curWeek());
 function renderPoints(){
-  const d = fromKey(sel);
-  $('pointsDate').textContent = fmt(d,{weekday:'long', day:'numeric', month:'long'});
-  const dd = dayData(sel);
+  const lb = weekLabel(ptsWeek), pd = $('pointsDate');
+  pd.replaceChildren(lb.title, el('small', null, lb.range + (ptsWeek === curWeek() ? ' · in corso' : '')));
+  $('ptsNow').hidden = ptsWeek === curWeek();
+  const dd = weekData(ptsWeek);
   while(dd.list.length < MIN_POINTS) dd.list.push('');
   const ol = $('points'); ol.replaceChildren();
   dd.list.forEach((txt, i) => ol.append(pointRow(dd, i)));
@@ -575,7 +632,7 @@ function pointRow(dd, i){
   if(ex) ta.style.minHeight = (32 + ex*POINT_LINE) + 'px';
   ta.readOnly = mode === 'ink';                        // in modalità penna niente tastiera né Scribble
   li.addEventListener('pointerdown', e => {            // col dito si sceglie il punto a cui dare spazio
-    if(mode === 'ink' && e.pointerType === 'touch'){ lastInk = {kind:'p', day:sel, row:i}; markTarget(); }
+    if(mode === 'ink' && e.pointerType === 'touch'){ lastInk = {kind:'p', day:ptsWeek, row:i}; markTarget(); }
   });
   ta.setAttribute('aria-label', `Punto ${i+1}`);
   // Invio = nuova riga nello stesso punto; l'area cresce e spinge giù i successivi
@@ -726,14 +783,17 @@ let toastT;
 function toast(msg){ const t=$('toast'); t.textContent=msg; t.hidden=false; clearTimeout(toastT); toastT=setTimeout(()=>t.hidden=true,2200); }
 
 /* ---------- Aggiornamento automatico al cambio di giorno ---------- */
-setInterval(() => {
+function checkDay(){
   const now = new Date(); now.setHours(0,0,0,0);
   if(now.getTime() !== today.getTime()){
-    const wasToday = sel === keyOf(today);
+    const wasToday = sel === keyOf(today), wasCurWeek = ptsWeek === curWeek();
     today.setTime(now.getTime());
+    if(wasCurWeek) ptsWeek = curWeek();   // nuovo lunedì: foglio dei punti nuovo e vuoto
     if(wasToday) selectDay(keyOf(today)); else renderAll();
   }
-}, 60000);
+}
+setInterval(checkDay, 60000);
+document.addEventListener('visibilitychange', () => { if(document.visibilityState === 'visible') checkDay(); });
 window.addEventListener('resize', () => { document.querySelectorAll('.point textarea,.memo').forEach(grow); if(!$('notes').hidden) sizeSheet(); inks.forEach(o=>o.size()); });
 
 /* =========================================================
@@ -921,7 +981,7 @@ function endStroke(e){
       s.r = o.rowAt(s.pts[0][1]);
       const top = o.tops[s.r] || 0;
       s.pts = s.pts.map(q => [q[0], Math.round((q[1]-top)*10)/10, q[2]]);
-      lastInk = {kind:'p', day:sel, row:s.r};
+      lastInk = {kind:'p', day:ptsWeek, row:s.r};
     } else if (o.days){                                // il tratto si aggancia alla casella del giorno
       const d = o.dayAt(s.pts[0][0], s.pts[0][1]);
       if (d){ const top = o.dtops[d].top; s.d = d; s.pts = s.pts.map(q => [q[0], Math.round((q[1]-top)*10)/10, q[2]]); }
@@ -1009,9 +1069,9 @@ function sizeSheet(){
 }
 function adjustSpace(sp, delta){
   if (sp.kind === 'p'){
-    const dd = dayData(sp.day); dd.extra ||= {};
+    const dd = weekData(sp.day); dd.extra ||= {};
     dd.extra[sp.row] = Math.max(0, (dd.extra[sp.row] || 0) + delta);
-    if (sp.day === sel){
+    if (sp.day === ptsWeek){
       const ta = $('points').children[sp.row]?.querySelector('textarea');
       if (ta){ ta.style.minHeight = (32 + dd.extra[sp.row]*POINT_LINE) + 'px'; grow(ta); }
       pointsInk.size();
@@ -1026,21 +1086,21 @@ function adjustSpace(sp, delta){
 $('enterBtn').onclick = () => {
   let sp;
   if (!$('notes').hidden) sp = {kind:'n', id:data.notes[data.noteIdx].id, d:NOTE_LINES};
-  else if (lastInk && lastInk.kind === 'p' && lastInk.day === sel) sp = {kind:'p', day:sel, row:lastInk.row, d:1};
+  else if (lastInk && lastInk.kind === 'p' && lastInk.day === ptsWeek) sp = {kind:'p', day:ptsWeek, row:lastInk.row, d:1};
   else { toast('Scrivi o tocca col dito un punto della lista, poi premi Invio'); return; }
   adjustSpace(sp, sp.d); pushUndo({space:sp});
   if (sp.kind === 'n'){ const pg = document.querySelector('.page'); pg.scrollTo({top:pg.scrollHeight, behavior:'smooth'}); }
 };
 function markTarget(){
   document.querySelectorAll('.point.target').forEach(x => x.classList.remove('target'));
-  if (mode === 'ink' && lastInk && lastInk.kind === 'p' && lastInk.day === sel)
+  if (mode === 'ink' && lastInk && lastInk.kind === 'p' && lastInk.day === ptsWeek)
     $('points').children[lastInk.row]?.classList.add('target');
 }
 
 // Tre aree: settimana (per settimana), lista numerata (per giorno, agganciata ai punti), foglio note (per foglio)
 const leftInk   = makeInk(document.querySelector('.left'), () => 'w:' + keyOf(mondayOf(fromKey(sel))), {days:true});
 document.querySelector('.weekdays').addEventListener('scroll', () => leftInk.scheduleBase(), {passive:true});
-const pointsInk = makeInk($('points'), () => 'p:' + sel, {scroller:true, rows:true});
+const pointsInk = makeInk($('points'), () => 'pw:' + ptsWeek, {scroller:true, rows:true});
 const notesInk  = makeInk(document.querySelector('.page'), () => 'n:' + (data.notes[data.noteIdx]||{}).id, {scroller:true});
 leftInk.host.append(leftInk.c, leftInk.live);
 notesInk.host.append(notesInk.c, notesInk.live);
@@ -1153,7 +1213,7 @@ $('bkFile').onchange = async () => {
     if (!d || !Array.isArray(d.events) || !Array.isArray(d.notes)) throw 0;
     pending = d;
     const when = obj.exportedAt ? new Date(obj.exportedAt).toLocaleString('it-IT',{day:'numeric',month:'long',year:'numeric',hour:'2-digit',minute:'2-digit'}) : 'data sconosciuta';
-    $('bkSummary').textContent = `Backup del ${when}: ${d.events.length} eventi, ${d.notes.length} fogli di note, ${Object.keys(d.days||{}).length} giorni con punti. I dati attuali verranno sostituiti.`;
+    $('bkSummary').textContent = `Backup del ${when}: ${d.events.length} eventi, ${d.notes.length} fogli di note, ${Object.keys(d.weeks||{}).length} settimane di punti. I dati attuali verranno sostituiti.`;
     $('bkConfirm').hidden = false;
   }catch(e){
     $('bkErr').textContent = 'Questo file non è un backup dell’Agenda. Scegli il file “Agenda-backup-…json”.';
@@ -1164,7 +1224,7 @@ $('bkCancel').onclick = () => { pending = null; $('bkConfirm').hidden = true; };
 $('bkApply').onclick = () => {
   if (!pending) return;
   data = pending; pending = null;
-  data.ink ||= {}; data.days ||= {}; if (!data.notes.length) data.notes.push({id:Date.now(), text:'', created:Date.now()});
+  data.ink ||= {}; data.days ||= {}; migratePoints(); if (!data.notes.length) data.notes.push({id:Date.now(), text:'', created:Date.now()});
   undoStack.length = 0; redoStack.length = 0; updUndo(); lastInk = null;
   writeNow(); renderAll(); if (!$('notes').hidden) renderNotes();
   $('menuOverlay').hidden = true; toast('Dati ripristinati dal backup');
@@ -1172,7 +1232,7 @@ $('bkApply').onclick = () => {
 
 // All'avvio: se IndexedDB ha una copia più recente (o localStorage è stato svuotato) la si usa
 idbGet().then(d => {
-  if (d && (d.savedAt || 0) > (data.savedAt || 0)){ data = d; data.ink ||= {}; renderAll(); }
+  if (d && (d.savedAt || 0) > (data.savedAt || 0)){ data = d; migratePoints(); ptsWeek = curWeek(); renderAll(); }
   else writeNow();
   updateBackupUI();
 });
