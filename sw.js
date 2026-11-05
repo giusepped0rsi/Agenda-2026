@@ -2,11 +2,12 @@
    Pagina: prima la rete (così ricevi gli aggiornamenti), se manca la connessione la copia salvata.
    Icone e manifest: dalla copia salvata.
    Quando pubblichi una nuova versione, cambia il numero qui sotto. */
-const CACHE = 'agenda-v4';
+const CACHE = 'agenda-v5';
 const ASSETS = ['./', './index.html'];
 
 self.addEventListener('install', e => {
-  e.waitUntil(caches.open(CACHE).then(c => c.addAll(ASSETS)).then(() => self.skipWaiting()));
+  // cache:'reload' = scarica dal server, mai copie vecchie del browser
+  e.waitUntil(caches.open(CACHE).then(c => c.addAll(ASSETS.map(u => new Request(u, {cache:'reload'})))).then(() => self.skipWaiting()));
 });
 self.addEventListener('activate', e => {
   e.waitUntil(caches.keys()
@@ -17,7 +18,8 @@ self.addEventListener('fetch', e => {
   const req = e.request;
   if (req.method !== 'GET' || new URL(req.url).origin !== location.origin) return;
   if (req.mode === 'navigate'){
-    const net = fetch(req).then(res => {
+    // cache:'no-cache' = chiede sempre al server se c'è una versione nuova (GitHub tiene copie per 10 minuti)
+    const net = fetch(req.url, {cache:'no-cache', credentials:'same-origin'}).then(res => {
       if (res.ok){ const copy = res.clone(); caches.open(CACHE).then(c => c.put('./index.html', copy)); }
       return res;
     });
