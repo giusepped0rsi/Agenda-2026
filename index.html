@@ -81,15 +81,15 @@ textarea,input{font:inherit;font-size:16px;color:var(--text)}
 .sheet{min-height:0;display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);background:var(--surface);border:1px solid var(--rule);border-radius:14px;overflow:hidden}
 .left{min-height:0;display:flex;flex-direction:column;border-right:2px solid var(--ink)}
 .weekdays{flex:1;min-height:0;display:flex;flex-direction:column;overflow-y:auto;-webkit-overflow-scrolling:touch}
-.bottom{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.05fr);border-top:1px solid var(--ink);flex:0 0 auto}
+.bottom{display:grid;grid-template-columns:minmax(0,.8fr) minmax(0,1.2fr);border-top:1px solid var(--ink);flex:0 0 auto}
 .weekend{display:flex;flex-direction:column;border-right:1px solid var(--ink);min-height:0}
 
-.day{flex:1 0 auto;min-height:62px;display:grid;grid-template-columns:52px minmax(0,1fr);border-bottom:1px solid var(--ink)}
+.day{flex:1 1 0;min-height:48px;display:grid;grid-template-columns:52px minmax(0,1fr);border-bottom:1px solid var(--ink)}
 .day:last-child{border-bottom:0}
 .day.is-sel{background:var(--sel)}
-.day-label{border:0;background:none;display:flex;flex-direction:column;align-items:center;justify-content:flex-start;gap:2px;padding:6px 0}
-.dow{font-family:var(--f-display);font-size:20px;color:var(--ink);font-weight:500}
-.dnum{font-family:var(--f-mono);font-size:13px;width:28px;height:28px;border-radius:50%;display:grid;place-items:center;font-variant-numeric:tabular-nums;color:var(--muted)}
+.day-label{border:0;background:none;display:flex;flex-direction:column;align-items:center;justify-content:flex-start;gap:1px;padding:5px 0}
+.dow{font-family:var(--f-display);font-size:19px;line-height:1.1;color:var(--ink);font-weight:500}
+.dnum{font-family:var(--f-mono);font-size:12px;width:24px;height:24px;border-radius:50%;display:grid;place-items:center;font-variant-numeric:tabular-nums;color:var(--muted)}
 .day.is-today .dnum{background:var(--ink);color:var(--surface)}
 .day-body{min-width:0;min-height:0;overflow-y:auto;padding:8px 10px 8px 0;display:flex;flex-direction:column;gap:6px;-webkit-overflow-scrolling:touch}
 .chips{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:4px}
@@ -101,13 +101,13 @@ textarea,input{font:inherit;font-size:16px;color:var(--text)}
 .memo::placeholder{color:var(--muted);opacity:.6}
 
 /* ---------- Calendario del mese ---------- */
-.cal{padding:8px 10px 10px;display:flex;flex-direction:column}
-.cal-head{display:flex;align-items:center;gap:6px;border-bottom:1px solid var(--ink);padding-bottom:6px}
-.cal-month{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-family:var(--f-display);font-style:italic;font-size:clamp(16px,1.9vw,22px);font-weight:500;color:var(--ink);text-transform:capitalize;margin:0}
-.cal-head .icon-btn{width:32px;height:32px;font-size:15px}
-.cal-grid{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));grid-auto-rows:28px;gap:2px;margin-top:6px}
-.cal-dow{font-size:11px;letter-spacing:.08em;color:var(--muted);text-align:center;align-self:center;font-weight:600}
-.cal-day{border:0;background:none;padding:0;min-width:0;border-radius:8px;font-family:var(--f-mono);font-size:13px;font-variant-numeric:tabular-nums;position:relative;display:grid;place-items:center;min-height:24px}
+.cal{padding:4px 10px 5px;display:flex;flex-direction:column}
+.cal-head{display:flex;align-items:center;gap:6px;border-bottom:1px solid var(--ink);padding-bottom:4px}
+.cal-month{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-family:var(--f-display);font-style:italic;font-size:clamp(15px,1.6vw,19px);font-weight:500;color:var(--ink);text-transform:capitalize;margin:0}
+.cal-head .icon-btn{width:26px;height:26px;font-size:14px;border-radius:8px}
+.cal-grid{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));grid-auto-rows:18px;gap:1px;margin-top:2px}
+.cal-dow{font-size:10px;letter-spacing:.08em;color:var(--muted);text-align:center;align-self:center;font-weight:600}
+.cal-day{border:0;background:none;padding:0;min-width:0;border-radius:8px;font-family:var(--f-mono);font-size:12px;font-variant-numeric:tabular-nums;position:relative;display:grid;place-items:center;min-height:0;border-radius:6px}
 .cal-day.out{color:var(--muted);opacity:.45}
 .cal-day.in-week{background:var(--sel)}
 .cal-day.today{background:var(--ink);color:var(--surface)}
@@ -177,6 +177,9 @@ body[data-mode="ink"] .point.target{background:var(--sel);border-radius:8px}
 body[data-mode="scribble"] .point textarea,body[data-mode="scribble"] .memo{box-shadow:inset 3px 0 0 var(--ink-soft);padding-left:8px}
 
 /* ---------- Barra in basso: modalità di scrittura ---------- */
+/* con il pannello penna aperto la pagina si accorcia: niente resta coperto */
+body:has(#inkPanel:not([hidden])) .app{padding-bottom:136px}
+body:has(#inkPanel:not([hidden])) .notes{padding-bottom:calc(136px + env(safe-area-inset-bottom,0px))}
 .dock{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(12px + env(safe-area-inset-bottom,0px));z-index:70;display:flex;flex-direction:column;align-items:center;gap:8px;width:max-content;max-width:calc(100% - 32px)}
 #eventOverlay:not([hidden]) ~ .dock,#menuOverlay:not([hidden]) ~ .dock{display:none}
 .modes{display:flex;flex-wrap:wrap;justify-content:center;gap:4px;background:var(--surface);border:1px solid var(--rule);border-radius:14px;padding:4px;box-shadow:var(--shadow)}
@@ -202,8 +205,8 @@ body[data-mode="scribble"] .point textarea,body[data-mode="scribble"] .memo{box-
 
 /* ---------- Schermi stretti (iPad verticale / telefono) ---------- */
 @media (max-height:680px) and (min-width:701px){
-  .cal-grid{grid-auto-rows:24px}
-  .cal-head .icon-btn{width:28px;height:28px}
+  .cal-grid{grid-auto-rows:17px}
+  .cal-head .icon-btn{width:26px;height:26px}
 }
 @media (max-width:700px){
   body{height:auto}
@@ -312,7 +315,7 @@ body[data-mode="scribble"] .point textarea,body[data-mode="scribble"] .memo{box-
       </div>
     </div>
     <p class="err" id="bkErr" hidden></p>
-    <div class="actions"><span class="ver" style="margin-right:auto;align-self:center">Agenda 1.0</span><button class="btn" id="menuClose">Chiudi</button></div>
+    <div class="actions"><span class="ver" style="margin-right:auto;align-self:center">Agenda 1.1</span><button class="btn" id="menuClose">Chiudi</button></div>
   </div>
 </div>
 
@@ -476,6 +479,7 @@ function dayRow(d, i){
   const sec = el('section','day');
   if(k===keyOf(today)) sec.classList.add('is-today');
   if(k===sel) sec.classList.add('is-sel');
+  sec.dataset.day = k;                 // la scrittura a penna si aggancia a questa casella
 
   const lab = el('button','day-label');
   lab.setAttribute('aria-label', 'Seleziona ' + fmt(d,{weekday:'long',day:'numeric',month:'long'}));
@@ -773,8 +777,24 @@ function makeInk(host, getKey, opt = {}){
   };
   o.scheduleBase = () => { if(!o.raf) o.raf = requestAnimationFrame(() => { o.raf = 0; redraw(o); }); };
   o.scheduleLive = () => { if(!o.lraf) o.lraf = requestAnimationFrame(() => { o.lraf = 0; drawLive(o); }); };
-  o.offset = s => (o.rows && s.r != null) ? (o.tops[s.r] ?? 0) : 0;
-  o.readTops = () => { if(o.rows) o.tops = [...host.querySelectorAll(':scope > .point')].map(li => li.offsetTop); };
+  o.days = !!opt.days; o.dtops = {};
+  o.offset = s => (o.rows && s.r != null) ? (o.tops[s.r] ?? 0)
+                : (o.days && s.d) ? (o.dtops[s.d] ? o.dtops[s.d].top : -1e5) : 0;
+  o.readTops = () => {
+    if (o.rows) o.tops = [...host.querySelectorAll(':scope > .point')].map(li => li.offsetTop);
+    if (o.days){                                    // posizione di ogni giorno + area visibile (per ritagliare)
+      const hr = host.getBoundingClientRect(); o.dtops = {};
+      host.querySelectorAll('.day[data-day]').forEach(sec => {
+        const r = sec.getBoundingClientRect(), pr = sec.parentElement.getBoundingClientRect();
+        const y0 = Math.max(r.top, pr.top) - hr.top, y1 = Math.min(r.bottom, pr.bottom) - hr.top;
+        o.dtops[sec.dataset.day] = {top: r.top - hr.top, clip: [r.left - hr.left, y0, r.width, Math.max(0, y1 - y0)]};
+      });
+    }
+  };
+  o.dayAt = (x, y) => {
+    for (const [k, v] of Object.entries(o.dtops)){ const c = v.clip; if (x >= c[0] && x <= c[0]+c[2] && y >= c[1] && y <= c[1]+c[3]) return k; }
+    return null;
+  };
   o.rowAt = y => { let r = 0; o.tops.forEach((t,i) => { if (y >= t) r = i; }); return r; };
   if (window.ResizeObserver) new ResizeObserver(() => o.size()).observe(host);
   inks.push(o);
@@ -812,6 +832,13 @@ function paint(ctx, s, dy){
   }
   ctx.stroke();
 }
+// Disegna un tratto nella sua posizione; quelli di un giorno restano dentro la casella di quel giorno
+function paintIn(o, ctx, s){
+  const d = o.days && s.d ? o.dtops[s.d] : null;
+  if (o.days && s.d && !d) return;
+  if (d){ ctx.save(); ctx.beginPath(); ctx.rect(...d.clip); ctx.clip(); paint(ctx, s, d.top); ctx.restore(); }
+  else paint(ctx, s, o.offset(s));
+}
 function redraw(o){
   const {ctx, c} = o;
   ctx.setTransform(1,0,0,1,0,0); ctx.clearRect(0,0,c.width,c.height);
@@ -819,8 +846,8 @@ function redraw(o){
   ctx.setTransform(o.dpr,0,0,o.dpr,0,0);
   o.readTops(); pal = getComputedStyle(document.documentElement);
   const list = o.list();
-  for (const s of list) if (s.t === 'hl') paint(ctx, s, o.offset(s));   // evidenziatore sotto
-  for (const s of list) if (s.t !== 'hl') paint(ctx, s, o.offset(s));   // penna sopra
+  for (const s of list) if (s.t === 'hl') paintIn(o, ctx, s);   // evidenziatore sotto
+  for (const s of list) if (s.t !== 'hl') paintIn(o, ctx, s);   // penna sopra
 }
 const draw = redraw;
 function drawLive(o){
@@ -895,12 +922,16 @@ function endStroke(e){
       const top = o.tops[s.r] || 0;
       s.pts = s.pts.map(q => [q[0], Math.round((q[1]-top)*10)/10, q[2]]);
       lastInk = {kind:'p', day:sel, row:s.r};
+    } else if (o.days){                                // il tratto si aggancia alla casella del giorno
+      const d = o.dayAt(s.pts[0][0], s.pts[0][1]);
+      if (d){ const top = o.dtops[d].top; s.d = d; s.pts = s.pts.map(q => [q[0], Math.round((q[1]-top)*10)/10, q[2]]); }
+      lastInk = {kind:'w'};
     } else lastInk = {kind: o === notesInk ? 'n' : 'w'};
     const before = o.list().slice();
     data.ink[key] = before.concat([s]);
     pushUndo({ink:[{key, before, after:data.ink[key].slice()}]});
     active = null;
-    if (s.t === 'hl') redraw(o); else { pal = getComputedStyle(document.documentElement); o.ctx.setTransform(o.dpr,0,0,o.dpr,0,0); paint(o.ctx, s, o.offset(s)); }
+    if (s.t === 'hl') redraw(o); else { pal = getComputedStyle(document.documentElement); o.ctx.setTransform(o.dpr,0,0,o.dpr,0,0); paintIn(o, o.ctx, s); }
     markTarget();
   } else if (active.erasing){
     const after = o.list();
@@ -1007,7 +1038,8 @@ function markTarget(){
 }
 
 // Tre aree: settimana (per settimana), lista numerata (per giorno, agganciata ai punti), foglio note (per foglio)
-const leftInk   = makeInk(document.querySelector('.left'), () => 'w:' + keyOf(mondayOf(fromKey(sel))));
+const leftInk   = makeInk(document.querySelector('.left'), () => 'w:' + keyOf(mondayOf(fromKey(sel))), {days:true});
+document.querySelector('.weekdays').addEventListener('scroll', () => leftInk.scheduleBase(), {passive:true});
 const pointsInk = makeInk($('points'), () => 'p:' + sel, {scroller:true, rows:true});
 const notesInk  = makeInk(document.querySelector('.page'), () => 'n:' + (data.notes[data.noteIdx]||{}).id, {scroller:true});
 leftInk.host.append(leftInk.c, leftInk.live);
