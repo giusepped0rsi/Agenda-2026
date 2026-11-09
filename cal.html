@@ -31,19 +31,23 @@ h1{margin:0;font-family:var(--f-display);font-weight:500;font-size:30px;line-hei
 ol{margin:0;padding-left:20px;line-height:1.55;color:var(--muted)}
 ol strong{color:var(--text)}
 .err{color:var(--danger);margin:0;line-height:1.5}
+.note{margin:0;font-size:14px;color:var(--muted);line-height:1.5}
+.note a{color:var(--ink)}
+.btn:disabled{opacity:.6}
 </style>
 </head>
 <body>
 <main>
   <h1>Aggiungi al Calendario</h1>
   <section class="ev" id="list" aria-label="Eventi da aggiungere"></section>
-  <a class="btn primary" id="go" href="#">Aggiungi al Calendario</a>
-  <button class="btn" id="dl" type="button">Scarica il file dell’evento</button>
+  <button class="btn primary" id="go" type="button" disabled>Preparazione…</button>
+  <button class="btn" id="share" type="button">Condividi: Mail o File</button>
   <ol>
     <li>Tocca <strong>Aggiungi al Calendario</strong>: si apre la scheda del Calendario, tocca <strong>Aggiungi</strong> (o <strong>Aggiungi tutto</strong>).</li>
-    <li>Se non succede nulla, tocca <strong>Scarica il file dell’evento</strong>, poi apri il file dai download di Safari (freccia in alto) e tocca <strong>Aggiungi</strong>.</li>
+    <li>Se non si apre, tocca <strong>Condividi</strong> e scegli <strong>Mail</strong>: invialo a te stesso e nella mail tocca l’evento → <strong>Aggiungi al calendario</strong>. Oppure <strong>Salva su File</strong> e apri il file da File.</li>
     <li>Fatto: chiudi questa finestra con la <strong>X</strong> in alto per tornare all’Agenda.</li>
   </ol>
+  <p class="note">Verifica: <a href="prova.ics" id="test">apri un evento di prova</a>. Se questo si apre nel Calendario ma il tasto blu no, dillo a chi ti assiste: indica la strada giusta. L’evento di prova è fissato al 30 dicembre 2026, puoi eliminarlo dal Calendario.</p>
   <p class="err" id="err" hidden>Non ho ricevuto l’evento. Torna all’Agenda e riprova da “Salva”.</p>
 </main>
 <script>
@@ -56,7 +60,7 @@ ol strong{color:var(--text)}
     text = new TextDecoder().decode(Uint8Array.from(bin, c => c.charCodeAt(0)));
   }catch(e){}
   if (!text.startsWith('BEGIN:VCALENDAR')){
-    $('err').hidden = false; $('go').hidden = true; $('dl').hidden = true; return;
+    $('err').hidden = false; $('go').hidden = true; $('share').hidden = true; return;
   }
   name = name.replace(/[^\w.-]/g, '_');
 
@@ -79,17 +83,31 @@ ol strong{color:var(--text)}
   }));
   if (events.length > 1) $('go').textContent = `Aggiungi ${events.length} eventi al Calendario`;
 
-  // 1) Collegamento diretto: Safari passa il file al Calendario
-  const dataUrl = 'data:text/calendar;charset=utf-8,' + encodeURIComponent(text);
-  $('go').href = dataUrl;
-  // 2) Alternativa: file scaricato, da aprire dai download di Safari
-  $('dl').onclick = () => {
-    const blob = new Blob([text], {type:'text/calendar'});
-    const a = document.createElement('a');
-    a.href = URL.createObjectURL(blob); a.download = name;
-    document.body.append(a); a.click();
-    setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 4000);
-  };
+  // 1) Il service worker dell'Agenda, attivato anche in questa finestra di Safari, restituisce
+  //    l'evento come vero file di calendario: iOS apre la scheda "Aggiungi" del Calendario.
+  const d = params.get('d');
+  const icsUrl = `cal/${encodeURIComponent(name)}?d=${encodeURIComponent(d)}`;
+  const ready = () => { $('go').disabled = false; $('go').textContent = events.length > 1 ? `Aggiungi ${events.length} eventi al Calendario` : 'Aggiungi al Calendario'; };
+  $('go').onclick = () => { location.href = icsUrl; };
+  if ('serviceWorker' in navigator){
+    if (navigator.serviceWorker.controller) ready();
+    else {
+      navigator.serviceWorker.addEventListener('controllerchange', ready);
+      navigator.serviceWorker.register('sw.js').catch(() => {});
+      // prima volta in questa finestra: se il service worker non prende il controllo, ricarico una volta
+      setTimeout(() => {
+        if (navigator.serviceWorker.controller) return;
+        let tried = false; try{ tried = sessionStorage.getItem('calReload') === '1'; sessionStorage.setItem('calReload','1'); }catch(e){}
+        if (!tried) location.reload();
+        else { $('go').hidden = true; }
+      }, 4000);
+    }
+  } else $('go').hidden = true;
+
+  // 2) Alternativa: foglio Condividi con il file (Mail, File…)
+  const file = new File([text], name, {type:'text/calendar'});
+  if (!(navigator.canShare && navigator.canShare({files:[file]}))) $('share').hidden = true;
+  $('share').onclick = async () => { try{ await navigator.share({files:[file], title:name}); }catch(e){} };
 })();
 </script>
 </body>
