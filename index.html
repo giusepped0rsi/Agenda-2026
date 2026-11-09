@@ -76,7 +76,7 @@ textarea,input{font:inherit;font-size:16px;color:var(--text)}
 .ver{font-family:var(--f-mono);font-size:12px;color:var(--muted)}
 .snap-row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
 .snap-row select{flex:1;min-width:200px}
-.daybanner{position:fixed;left:50%;transform:translateX(-50%);top:calc(64px + env(safe-area-inset-top,0px));z-index:65;width:max-content;max-width:calc(100% - 32px);
+.daybanner{position:fixed;left:50%;transform:translateX(-50%);top:calc(64px + env(safe-area-inset-top,0px));z-index:35;width:max-content;max-width:calc(100% - 32px);
   display:flex;align-items:center;gap:12px;flex-wrap:wrap;background:var(--surface);border:1px solid var(--ink);border-radius:14px;padding:10px 10px 10px 16px;box-shadow:var(--shadow)}
 .daybanner p{margin:0;font-size:14px;line-height:1.4}
 .daybanner p strong{font-weight:600}
@@ -103,7 +103,11 @@ textarea,input{font:inherit;font-size:16px;color:var(--text)}
 .chip{display:flex;align-items:baseline;gap:8px;width:100%;text-align:left;border:0;border-left:4px solid var(--c);background:var(--paper);border-radius:6px;padding:5px 8px;font-size:13.5px;line-height:1.3}
 .chip .t{font-family:var(--f-mono);font-size:12px;font-variant-numeric:tabular-nums;color:var(--muted);flex:none}
 .chip .k{font-weight:600;font-size:11px;letter-spacing:.08em;color:var(--c);flex:none}
-.chip .d{min-width:0;overflow-wrap:anywhere}
+.chip .d{min-width:0;overflow-wrap:anywhere;flex:1}
+.chip .bell{flex:none;align-self:center;color:var(--muted)}
+.cal-box{border:1px solid var(--rule);border-radius:12px;padding:12px 14px;display:flex;flex-direction:column;gap:10px;background:var(--paper)}
+.cal-box .hint{margin:0;font-size:13px;color:var(--muted);line-height:1.4}
+.cal-box select:disabled{opacity:.5}
 .memo{width:100%;border:0;background:transparent;resize:none;padding:2px 0;line-height:1.45;min-height:28px;overflow:hidden}
 .memo::placeholder{color:var(--muted);opacity:.6}
 
@@ -300,6 +304,11 @@ body:has(#inkPanel:not([hidden])) .notes{padding-bottom:calc(136px + env(safe-ar
     <label class="field" id="evEndWrap" hidden><span>Fino al (compreso)</span><input class="inp" type="date" id="evEnd"></label>
     <label class="field"><span>Descrizione</span><input class="inp" type="text" id="evDesc" placeholder="Es. Riunione di coordinamento"></label>
     <label class="field"><span>Note</span><textarea class="inp" id="evNote" rows="2" placeholder="Luogo, partecipanti…"></textarea></label>
+    <div class="cal-box">
+      <label class="check"><input type="checkbox" id="evCal"> Aggiungi al Calendario (iPad e iPhone)</label>
+      <label class="field"><span>Promemoria</span><select class="inp" id="evAlarm"></select></label>
+      <p class="hint" id="evCalHint">Il Calendario di Apple lo porta su tutti i tuoi dispositivi con iCloud e ti avvisa all’ora scelta.</p>
+    </div>
     <p class="err" id="evErr" hidden></p>
     <div class="actions">
       <button type="button" class="btn danger" id="evDelete" hidden>Elimina</button>
@@ -325,6 +334,7 @@ body:has(#inkPanel:not([hidden])) .notes{padding-bottom:calc(136px + env(safe-ar
     <div class="actions" style="justify-content:flex-start">
       <button class="btn primary" id="bkExport">Salva backup</button>
       <button class="btn" id="bkImport">Ripristina da file…</button>
+      <button class="btn" id="calAll">Prossimi eventi → Calendario</button>
       <input type="file" id="bkFile" accept=".json,application/json" style="position:absolute;width:1px;height:1px;opacity:0;pointer-events:none">
     </div>
     <div class="bk-confirm" id="bkConfirm" hidden>
@@ -335,7 +345,7 @@ body:has(#inkPanel:not([hidden])) .notes{padding-bottom:calc(136px + env(safe-ar
       </div>
     </div>
     <p class="err" id="bkErr" hidden></p>
-    <div class="actions"><span class="ver" style="margin-right:auto;align-self:center">Agenda 1.6</span><button class="btn" id="appUpdate">Aggiorna app</button><button class="btn" id="menuClose">Chiudi</button></div>
+    <div class="actions"><span class="ver" style="margin-right:auto;align-self:center">Agenda 1.7</span><button class="btn" id="appUpdate">Aggiorna app</button><button class="btn" id="menuClose">Chiudi</button></div>
   </div>
 </div>
 
@@ -550,6 +560,7 @@ function dayRow(d, i){
     b.append(el('span','t', ev.allDay ? 'tutto il g.' : ev.time),
              el('span','k', ev.type),
              el('span','d', ev.desc || ''));
+    if (ev.calAt){ const i = el('span','bell'); i.title = 'Nel Calendario'; i.innerHTML = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg>'; b.append(i); }
     b.onclick = () => openEvent(ev);
     li.append(b); ul.append(li);
   }
@@ -703,7 +714,21 @@ function syncAllDay(){
   const all = $('evAllDay').checked;
   $('evTime').disabled = all;
   $('evEndWrap').hidden = !all;
+  fillAlarms(all);
 }
+/* ---------- Promemoria per il Calendario ---------- */
+const ALARMS_TIMED = [['0','All’ora dell’evento'],['5','5 minuti prima'],['15','15 minuti prima'],['30','30 minuti prima'],['60','1 ora prima'],['120','2 ore prima'],['1440','Il giorno prima, stessa ora'],['none','Nessun promemoria']];
+const ALARMS_DAY   = [['same8','Il giorno stesso alle 8:00'],['prev18','Il giorno prima alle 18:00'],['prev9','Il giorno prima alle 9:00'],['none','Nessun promemoria']];
+let alarmWanted = null;
+function fillAlarms(allDay){
+  const prefs = (data.prefs ||= {cal:true, alarm:'15', alarmDay:'same8'});
+  const list = allDay ? ALARMS_DAY : ALARMS_TIMED, sel_ = $('evAlarm');
+  const want = alarmWanted && list.some(o => o[0] === alarmWanted) ? alarmWanted : (allDay ? prefs.alarmDay : prefs.alarm);
+  sel_.replaceChildren(...list.map(([v,t]) => { const o = el('option', null, t); o.value = v; return o; }));
+  sel_.value = list.some(o => o[0] === want) ? want : list[0][0];
+}
+$('evAlarm').onchange = () => { alarmWanted = $('evAlarm').value; };
+$('evCal').onchange = () => { $('evAlarm').disabled = !$('evCal').checked; };
 $('evAllDay').onchange = syncAllDay;
 $('evNote').oninput = e => grow(e.target);
 
@@ -722,8 +747,16 @@ function openEvent(ev){
   $('evNote').value   = ev ? (ev.note||'') : '';
   $('evDelete').hidden = !ev; $('evDelete').classList.remove('armed'); $('evDelete').textContent='Elimina';
   $('evErr').hidden = true;
+  const prefs = (data.prefs ||= {cal:true, alarm:'15', alarmDay:'same8'});
+  alarmWanted = ev && ev.alarm ? ev.alarm : null;
+  // evento già nel Calendario: non lo rimanda (eviterebbe un doppione), a meno che tu non lo spunti
+  $('evCal').checked = ev ? !ev.calAt : prefs.cal;
+  $('evCalHint').textContent = ev && ev.calAt
+    ? `Già aggiunto al Calendario il ${new Date(ev.calAt).toLocaleDateString('it-IT',{day:'numeric',month:'long'})}. Se lo modifichi qui, spunta la casella e nel Calendario elimina la versione vecchia.`
+    : 'Il Calendario di Apple lo porta su tutti i tuoi dispositivi con iCloud e ti avvisa all’ora scelta.';
   setType(ev ? ev.type : 'RIUNIONE');
   syncAllDay();
+  $('evAlarm').disabled = !$('evCal').checked;
   $('eventOverlay').hidden = false;
   grow($('evNote'));
 }
@@ -743,10 +776,17 @@ $('eventForm').addEventListener('submit', e => {
   if(end && end < date) return err('La data di fine deve essere uguale o successiva al giorno di inizio.');
   if(end === date) end = '';
   const rec = {id: editing ? editing.id : Date.now(), type: chosenType, date, time: allDay?'':time, allDay, end,
-               desc: $('evDesc').value.trim(), note: $('evNote').value.trim()};
+               desc: $('evDesc').value.trim(), note: $('evNote').value.trim(),
+               alarm: $('evAlarm').value, calAt: editing ? editing.calAt : undefined};
+  const toCal = $('evCal').checked;
+  const prefs = (data.prefs ||= {cal:true, alarm:'15', alarmDay:'same8'});
+  if(!editing) prefs.cal = toCal;                          // ricorda le ultime scelte
+  if(allDay) prefs.alarmDay = rec.alarm; else prefs.alarm = rec.alarm;
+  if(toCal) rec.calAt = Date.now();
   if(editing) data.events[data.events.findIndex(x=>x.id===editing.id)] = rec;
   else data.events.push(rec);
   save(); closeEvent();
+  if(toCal) openInCalendar([rec]);                         // apre "Aggiungi al Calendario" di iPadOS
   selectDay(date);                     // porta la vista sul giorno dell'evento
   toast(`${rec.type} salvato · ${fmt(fromKey(date),{weekday:'short',day:'numeric',month:'short'})}${rec.allDay?'':' ore '+rec.time}`);
 });
@@ -1280,6 +1320,88 @@ $('bkApply').onclick = () => {
   undoStack.length = 0; redoStack.length = 0; updUndo(); lastInk = null;
   writeNow(); renderAll(); if (!$('notes').hidden) renderNotes();
   $('menuOverlay').hidden = true; updateBanner(); toast('Dati ripristinati dal backup');
+};
+
+/* =========================================================
+   CALENDARIO DI APPLE (file .ics)
+   L'evento viene consegnato al Calendario dell'iPad, che lo sincronizza con iCloud
+   su iPhone e altri dispositivi e manda la notifica all'ora del promemoria.
+   ========================================================= */
+const icsEsc = t => String(t || '').replace(/\\/g,'\\\\').replace(/\r?\n/g,'\\n').replace(/,/g,'\\,').replace(/;/g,'\;');
+function icsFold(line){                                   // righe max 75 caratteri (standard iCalendar)
+  const out = []; let l = line;
+  while (l.length > 73){ out.push(l.slice(0, 73)); l = ' ' + l.slice(73); }
+  out.push(l); return out.join('\r\n');
+}
+const icsDate = k => k.replace(/-/g, '');
+const icsLocal = d => `${d.getFullYear()}${pad(d.getMonth()+1)}${pad(d.getDate())}T${pad(d.getHours())}${pad(d.getMinutes())}00`;
+const typeName = t => t === 'VTC' ? 'VTC' : t.charAt(0) + t.slice(1).toLowerCase();
+function icsTrigger(a){
+  if (!a || a === 'none') return null;
+  if (a === 'same8') return 'PT8H';                        // giorno stesso alle 8:00 (evento di un giorno intero)
+  if (a === 'prev18') return '-PT6H';                      // giorno prima alle 18:00
+  if (a === 'prev9') return '-PT15H';                      // giorno prima alle 9:00
+  const m = +a; return m === 0 ? 'PT0M' : `-PT${m}M`;
+}
+function buildICS(list){
+  const stamp = new Date().toISOString().replace(/[-:]/g,'').replace(/\.\d+/,'');
+  const L = ['BEGIN:VCALENDAR','VERSION:2.0','PRODID:-//Agenda iPad//IT','CALSCALE:GREGORIAN','METHOD:PUBLISH'];
+  for (const e of list){
+    const title = typeName(e.type) + (e.desc ? ': ' + e.desc : '');
+    L.push('BEGIN:VEVENT', `UID:agenda-${e.id}@giusepped0rsi.github.io`, `DTSTAMP:${stamp}`);
+    if (e.allDay){
+      L.push(`DTSTART;VALUE=DATE:${icsDate(e.date)}`, `DTEND;VALUE=DATE:${icsDate(keyOf(addDays(fromKey(e.end || e.date), 1)))}`, 'TRANSP:TRANSPARENT');
+    } else {
+      const [h, mi] = (e.time || '09:00').split(':').map(Number);
+      const st = fromKey(e.date); st.setHours(h, mi, 0, 0);
+      const en = new Date(st.getTime() + 60*60000);          // durata predefinita: 1 ora
+      L.push(`DTSTART:${icsLocal(st)}`, `DTEND:${icsLocal(en)}`);   // ora locale del dispositivo
+    }
+    L.push(icsFold('SUMMARY:' + icsEsc(title)), `CATEGORIES:${icsEsc(e.type)}`);
+    if (e.note) L.push(icsFold('DESCRIPTION:' + icsEsc(e.note)));
+    const tr = icsTrigger(e.alarm || (e.allDay ? 'same8' : '15'));
+    if (tr) L.push('BEGIN:VALARM','ACTION:DISPLAY', icsFold('DESCRIPTION:' + icsEsc(title)), `TRIGGER:${tr}`, 'END:VALARM');
+    L.push('END:VEVENT');
+  }
+  L.push('END:VCALENDAR');
+  return L.join('\r\n') + '\r\n';
+}
+function b64(text){
+  const bytes = new TextEncoder().encode(text); let bin = '';
+  for (let i = 0; i < bytes.length; i += 8192) bin += String.fromCharCode.apply(null, bytes.subarray(i, i + 8192));
+  return btoa(bin);
+}
+// Con l'app installata: il service worker risponde a cal/evento.ics come un vero file di calendario
+// e iPadOS mostra "Aggiungi al Calendario". Senza service worker: foglio Condividi con il file.
+function openInCalendar(list){
+  const text = buildICS(list);
+  const name = list.length === 1 ? `evento-${list[0].date}.ics` : 'eventi-agenda.ics';
+  if (navigator.serviceWorker && navigator.serviceWorker.controller){
+    const a = document.createElement('a');
+    a.href = `cal/${encodeURIComponent(name)}?d=${encodeURIComponent(b64(text))}`;
+    a.target = '_blank'; a.rel = 'noopener';
+    document.body.append(a); a.click(); a.remove();
+    return;
+  }
+  shareICS(text, name);
+}
+async function shareICS(text, name){
+  const file = new File([text], name, {type:'text/calendar'});
+  try{
+    if (navigator.canShare && navigator.canShare({files:[file]})){ await navigator.share({files:[file], title:name}); return; }
+  }catch(e){ if (e && e.name === 'AbortError') return; }
+  const a = document.createElement('a'); a.href = URL.createObjectURL(file); a.download = name;
+  document.body.append(a); a.click(); setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 3000);
+  toast('File del calendario scaricato: aprilo da File → Download');
+}
+$('calAll').onclick = () => {
+  const todayK = keyOf(new Date());
+  const list = data.events.filter(e => (e.end || e.date) >= todayK && !e.calAt);
+  if (!list.length){ toast('Nessun evento futuro da aggiungere: sono già tutti nel Calendario'); return; }
+  const now = Date.now(); list.forEach(e => { e.calAt = now; if (!e.alarm) e.alarm = e.allDay ? 'same8' : '15'; });
+  writeNow(); renderAll();
+  openInCalendar(list);
+  toast(`${list.length} eventi inviati al Calendario`);
 };
 
 /* ---------- Backup giornaliero automatico ----------

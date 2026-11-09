@@ -2,7 +2,7 @@
    Pagina: prima la rete (così ricevi gli aggiornamenti), se manca la connessione la copia salvata.
    Icone e manifest: dalla copia salvata.
    Quando pubblichi una nuova versione, cambia il numero qui sotto. */
-const CACHE = 'agenda-v7';
+const CACHE = 'agenda-v8';
 const ASSETS = ['./', './index.html'];
 
 self.addEventListener('install', e => {
@@ -16,7 +16,19 @@ self.addEventListener('activate', e => {
 });
 self.addEventListener('fetch', e => {
   const req = e.request;
-  if (req.method !== 'GET' || new URL(req.url).origin !== location.origin) return;
+  const url = new URL(req.url);
+  if (req.method !== 'GET' || url.origin !== location.origin) return;
+  // Evento per il Calendario: l'app passa il file .ics nell'indirizzo, qui torna come file di calendario
+  if (url.pathname.includes('/cal/')){
+    try{
+      const bin = atob(url.searchParams.get('d') || '');
+      const text = new TextDecoder().decode(Uint8Array.from(bin, c => c.charCodeAt(0)));
+      const name = decodeURIComponent(url.pathname.split('/').pop() || 'evento.ics');
+      e.respondWith(new Response(text, {headers:{'Content-Type':'text/calendar; charset=utf-8',
+        'Content-Disposition':`inline; filename="${name.replace(/[^\w.-]/g,'_')}"`}}));
+    }catch(err){ e.respondWith(new Response('Evento non valido', {status:400})); }
+    return;
+  }
   if (req.mode === 'navigate'){
     // cache:'no-cache' = chiede sempre al server se c'è una versione nuova (GitHub tiene copie per 10 minuti)
     const net = fetch(req.url, {cache:'no-cache', credentials:'same-origin'}).then(res => {
