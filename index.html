@@ -76,11 +76,11 @@ textarea,input{font:inherit;font-size:16px;color:var(--text)}
 .ver{font-family:var(--f-mono);font-size:12px;color:var(--muted)}
 .snap-row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
 .snap-row select{flex:1;min-width:200px}
-.daybanner{position:fixed;left:50%;transform:translateX(-50%);top:calc(64px + env(safe-area-inset-top,0px));z-index:35;width:max-content;max-width:calc(100% - 32px);
-  display:flex;align-items:center;gap:12px;flex-wrap:wrap;background:var(--surface);border:1px solid var(--ink);border-radius:14px;padding:10px 10px 10px 16px;box-shadow:var(--shadow)}
-.daybanner p{margin:0;font-size:14px;line-height:1.4}
+.daybanner{display:flex;align-items:center;gap:6px;min-width:0;flex:0 1 auto;border:1px solid var(--ink);border-radius:12px;padding:3px 3px 3px 12px;background:var(--surface)}
+.daybanner p{margin:0;font-size:13px;line-height:1.2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
 .daybanner p strong{font-weight:600}
-.daybanner .icon-btn{width:36px;height:36px}
+.daybanner .btn{height:34px;padding:0 12px;font-size:13px;white-space:nowrap}
+.daybanner .icon-btn{width:30px;height:30px;border:0}
 .main-btn{height:44px;padding:0 20px;border-radius:12px;border:1.5px solid var(--ink);background:var(--surface);color:var(--ink);font-weight:600;letter-spacing:.06em;font-size:14px;text-transform:uppercase}
 .main-btn.primary{background:var(--ink);color:var(--surface)}
 
@@ -91,7 +91,8 @@ textarea,input{font:inherit;font-size:16px;color:var(--text)}
 .bottom{display:grid;grid-template-columns:minmax(0,.8fr) minmax(0,1.2fr);border-top:1px solid var(--ink);flex:0 0 auto}
 .weekend{display:flex;flex-direction:column;border-right:1px solid var(--ink);min-height:0}
 
-.day{flex:1 1 0;min-height:48px;display:grid;grid-template-columns:52px minmax(0,1fr);border-bottom:1px solid var(--ink)}
+.day{--evw:clamp(84px,21%,210px);flex:1 1 0;min-height:48px;display:grid;grid-template-columns:52px minmax(0,1fr) var(--evw);border-bottom:1px solid var(--ink)}
+.weekend .day{--evw:clamp(88px,38%,150px)}
 .day:last-child{border-bottom:0}
 .day.is-sel{background:var(--sel)}
 .day-label{border:0;background:none;display:flex;flex-direction:column;align-items:center;justify-content:flex-start;gap:1px;padding:5px 0}
@@ -99,7 +100,22 @@ textarea,input{font:inherit;font-size:16px;color:var(--text)}
 .dnum{font-family:var(--f-mono);font-size:12px;width:24px;height:24px;border-radius:50%;display:grid;place-items:center;font-variant-numeric:tabular-nums;color:var(--muted)}
 .day.is-today .dnum{background:var(--ink);color:var(--surface)}
 .day-body{min-width:0;min-height:0;overflow-y:auto;padding:8px 10px 8px 0;display:flex;flex-direction:column;gap:6px;-webkit-overflow-scrolling:touch}
-.chips{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:4px}
+/* Colonna Eventi: solo orario e colore del tipo; il tocco apre la scheda completa.
+   Più eventi ci sono nel giorno, più le etichette si fanno piccole e si affiancano. */
+.evcol{min-width:0;min-height:0;overflow-y:auto;-webkit-overflow-scrolling:touch;border-left:1.5px solid var(--ev-licenza);
+  padding:5px 6px;display:flex;flex-wrap:wrap;align-content:flex-start;gap:4px;cursor:pointer}
+.evcol-h{flex:1 1 100%;font-size:9.5px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:var(--ev-licenza);line-height:1;padding:1px 2px 2px}
+.evp{flex:1 1 100%;min-width:0;border:0;border-left:4px solid var(--c);border-radius:7px;
+  background:color-mix(in srgb, var(--c) 18%, var(--surface));color:var(--text);
+  font-family:var(--f-mono);font-variant-numeric:tabular-nums;font-weight:500;font-size:13px;line-height:1.2;
+  padding:4px 6px;text-align:left;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-height:26px}
+.evp.allday{font-family:var(--f-body);font-size:11px;letter-spacing:.02em}
+.evcol[data-n="3"] .evp,.evcol[data-n="4"] .evp{flex:0 0 calc(50% - 2px);font-size:12px;min-height:23px;padding:3px 5px}
+.evcol[data-n="many"]{padding:3px 5px;gap:3px}
+.evcol[data-n="many"] .evp{flex:0 0 calc(50% - 2px);font-size:10.5px;min-height:17px;padding:1px 4px;border-left-width:3px;border-radius:5px}
+.weekend .evcol .evp{font-size:11.5px;padding:3px 4px}
+.weekend .evcol[data-n="many"] .evp,.weekend .evcol[data-n="3"] .evp,.weekend .evcol[data-n="4"] .evp{font-size:10.5px}
+.evp.allday{font-size:10.5px}
 .chip{display:flex;align-items:baseline;gap:8px;width:100%;text-align:left;border:0;border-left:4px solid var(--c);background:var(--paper);border-radius:6px;padding:5px 8px;font-size:13.5px;line-height:1.3}
 .chip .t{font-family:var(--f-mono);font-size:12px;font-variant-numeric:tabular-nums;color:var(--muted);flex:none}
 .chip .k{font-weight:600;font-size:11px;letter-spacing:.08em;color:var(--c);flex:none}
@@ -251,6 +267,12 @@ body:has(#inkPanel:not([hidden])) .notes{padding-bottom:calc(136px + env(safe-ar
       <button class="ghost" id="goToday">Oggi</button>
       <button class="icon-btn" id="nextWeek" aria-label="Settimana successiva">›</button>
     </div>
+    <!-- AVVISO DEL BACKUP GIORNALIERO -->
+    <div class="daybanner" id="dayBanner" hidden role="status">
+      <p><strong>Backup di oggi</strong> pronto</p>
+      <button class="btn primary" id="dbSave">Salva in File</button>
+      <button class="icon-btn" id="dbClose" aria-label="Chiudi l'avviso">×</button>
+    </div>
     <div class="spacer"></div>
     <!-- I due pulsanti principali richiesti -->
     <button class="ghost" id="openMenu" aria-label="Backup e ripristino">Backup<i class="badge" id="bkBadge" hidden></i></button>
@@ -345,15 +367,8 @@ body:has(#inkPanel:not([hidden])) .notes{padding-bottom:calc(136px + env(safe-ar
       </div>
     </div>
     <p class="err" id="bkErr" hidden></p>
-    <div class="actions"><span class="ver" style="margin-right:auto;align-self:center">Agenda 1.7</span><button class="btn" id="appUpdate">Aggiorna app</button><button class="btn" id="menuClose">Chiudi</button></div>
+    <div class="actions"><span class="ver" style="margin-right:auto;align-self:center">Agenda 1.8</span><button class="btn" id="appUpdate">Aggiorna app</button><button class="btn" id="menuClose">Chiudi</button></div>
   </div>
-</div>
-
-<!-- AVVISO DEL BACKUP GIORNALIERO -->
-<div class="daybanner" id="dayBanner" hidden role="status">
-  <p><strong>Backup di oggi pronto.</strong> Copia automatica salvata nell’app.</p>
-  <button class="btn primary" id="dbSave">Salva in File</button>
-  <button class="icon-btn" id="dbClose" aria-label="Chiudi l'avviso">×</button>
 </div>
 
 <!-- BLOCCO NOTE -->
@@ -553,25 +568,31 @@ function dayRow(d, i){
   lab.onclick = () => selectDay(k);
 
   const body = el('div','day-body');
-  const ul = el('ul','chips');
-  for(const ev of eventsOn(k)){
-    const li = el('li'); const b = el('button','chip');
+  // Colonna Eventi: orario + colore del tipo; toccando si apre la scheda completa dell'evento
+  const evs = eventsOn(k);
+  const evcol = el('div','evcol');
+  evcol.dataset.n = evs.length > 4 ? 'many' : String(evs.length);
+  if (i === 0) evcol.append(el('span','evcol-h','Eventi'));
+  for (const ev of evs){
+    const b = el('button', 'evp' + (ev.allDay ? ' allday' : ''), ev.allDay ? 'Giorno' : ev.time);
+    b.type = 'button';
     b.style.setProperty('--c', typeColor(ev.type));
-    b.append(el('span','t', ev.allDay ? 'tutto il g.' : ev.time),
-             el('span','k', ev.type),
-             el('span','d', ev.desc || ''));
-    if (ev.calAt){ const i = el('span','bell'); i.title = 'Nel Calendario'; i.innerHTML = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg>'; b.append(i); }
-    b.onclick = () => openEvent(ev);
-    li.append(b); ul.append(li);
+    const label = `${typeName(ev.type)}${ev.allDay ? ', tutto il giorno' : ' alle ' + ev.time}${ev.desc ? ': ' + ev.desc : ''}${ev.calAt ? ' (nel Calendario)' : ''}`;
+    b.title = label; b.setAttribute('aria-label', label);
+    b.onclick = e => { e.stopPropagation(); openEvent(ev); };
+    evcol.append(b);
   }
+  // toccando lo spazio vuoto della colonna si crea un evento in quel giorno
+  evcol.onclick = e => { if (e.target === evcol || e.target.classList.contains('evcol-h')){ selectDay(k); openEvent(); } };
+  evcol.setAttribute('aria-label', `Eventi di ${fmt(d,{weekday:'long',day:'numeric'})}: ${evs.length || 'nessuno'}`);
   // Appunti liberi del giorno: textarea nativa = Scribble attivo
   const memo = el('textarea','memo');
   memo.rows = 1; memo.value = dayData(k).memo; memo.readOnly = mode === 'ink';
   memo.placeholder = 'Appunti…';
   memo.setAttribute('aria-label','Appunti di ' + fmt(d,{weekday:'long',day:'numeric'}));
   memo.oninput = () => { dayData(k).memo = memo.value; grow(memo); save(); };
-  body.append(ul, memo);
-  sec.append(lab, body);
+  body.append(memo);
+  sec.append(lab, body, evcol);
   requestAnimationFrame(()=>grow(memo));
   return sec;
 }
@@ -1335,7 +1356,7 @@ function icsFold(line){                                   // righe max 75 caratt
 }
 const icsDate = k => k.replace(/-/g, '');
 const icsLocal = d => `${d.getFullYear()}${pad(d.getMonth()+1)}${pad(d.getDate())}T${pad(d.getHours())}${pad(d.getMinutes())}00`;
-const typeName = t => t === 'VTC' ? 'VTC' : t.charAt(0) + t.slice(1).toLowerCase();
+function typeName(t){ return t === 'VTC' ? 'VTC' : t.charAt(0) + t.slice(1).toLowerCase(); }   // disponibile da subito
 function icsTrigger(a){
   if (!a || a === 'none') return null;
   if (a === 'same8') return 'PT8H';                        // giorno stesso alle 8:00 (evento di un giorno intero)
