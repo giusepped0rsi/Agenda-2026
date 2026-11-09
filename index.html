@@ -367,7 +367,7 @@ body:has(#inkPanel:not([hidden])) .notes{padding-bottom:calc(136px + env(safe-ar
       </div>
     </div>
     <p class="err" id="bkErr" hidden></p>
-    <div class="actions"><span class="ver" style="margin-right:auto;align-self:center">Agenda 1.8</span><button class="btn" id="appUpdate">Aggiorna app</button><button class="btn" id="menuClose">Chiudi</button></div>
+    <div class="actions"><span class="ver" style="margin-right:auto;align-self:center">Agenda 1.9</span><button class="btn" id="appUpdate">Aggiorna app</button><button class="btn" id="menuClose">Chiudi</button></div>
   </div>
 </div>
 
@@ -1392,19 +1392,16 @@ function b64(text){
   for (let i = 0; i < bytes.length; i += 8192) bin += String.fromCharCode.apply(null, bytes.subarray(i, i + 8192));
   return btoa(bin);
 }
-// Con l'app installata: il service worker risponde a cal/evento.ics come un vero file di calendario
-// e iPadOS mostra "Aggiungi al Calendario". Senza service worker: foglio Condividi con il file.
+// L'app sulla Home apre i collegamenti in una finestra di Safari separata, che non vede il service worker.
+// Per questo l'evento va alla pagina cal.html (un file vero su GitHub): lì Safari lo consegna al Calendario.
+// L'evento viaggia dopo "#" nell'indirizzo, quindi non arriva mai al server.
 function openInCalendar(list){
   const text = buildICS(list);
   const name = list.length === 1 ? `evento-${list[0].date}.ics` : 'eventi-agenda.ics';
-  if (navigator.serviceWorker && navigator.serviceWorker.controller){
-    const a = document.createElement('a');
-    a.href = `cal/${encodeURIComponent(name)}?d=${encodeURIComponent(b64(text))}`;
-    a.target = '_blank'; a.rel = 'noopener';
-    document.body.append(a); a.click(); a.remove();
-    return;
-  }
-  shareICS(text, name);
+  const a = document.createElement('a');
+  a.href = `cal.html#n=${encodeURIComponent(name)}&d=${encodeURIComponent(b64(text))}`;
+  a.target = '_blank'; a.rel = 'noopener';
+  document.body.append(a); a.click(); a.remove();
 }
 async function shareICS(text, name){
   const file = new File([text], name, {type:'text/calendar'});

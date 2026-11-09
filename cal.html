@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex">
+<title>Aggiungi al Calendario</title>
+<style>
+/* Pagina ponte: si apre nella finestra di Safari che l'Agenda apre sopra di sé
+   e consegna l'evento (file .ics) al Calendario di Apple.
+   I dati viaggiano nella parte dopo "#" dell'indirizzo: non arrivano mai al server. */
+:root{
+  --paper:#f5f6f9; --surface:#ffffff; --text:#1b1e2b; --muted:#666c86; --rule:#d8dbe8; --ink:#24318f; --danger:#b42d36;
+  --f-display:ui-serif, "New York", Georgia, serif; --f-body:-apple-system, system-ui, "Helvetica Neue", Arial, sans-serif;
+}
+@media (prefers-color-scheme: dark){:root{--paper:#12141c;--surface:#1a1d28;--text:#e7e9f2;--muted:#959ab3;--rule:#2d3144;--ink:#a9b6ff;--danger:#f07780;color-scheme:dark}}
+*{box-sizing:border-box}
+body{margin:0;min-height:100vh;background:var(--paper);color:var(--text);font-family:var(--f-body);font-size:16px;
+  padding:calc(24px + env(safe-area-inset-top,0px)) max(20px,env(safe-area-inset-right,0px)) calc(24px + env(safe-area-inset-bottom,0px)) max(20px,env(safe-area-inset-left,0px));
+  display:flex;justify-content:center}
+main{width:min(480px,100%);display:flex;flex-direction:column;gap:18px}
+h1{margin:0;font-family:var(--f-display);font-weight:500;font-size:30px;line-height:1.15}
+.ev{background:var(--surface);border:1px solid var(--rule);border-radius:14px;padding:12px 16px;display:flex;flex-direction:column;gap:10px}
+.ev div{display:flex;flex-direction:column;gap:2px;padding-bottom:10px;border-bottom:1px solid var(--rule)}
+.ev div:last-child{border-bottom:0;padding-bottom:0}
+.ev strong{font-weight:600}
+.ev span{color:var(--muted);font-size:14px}
+.btn{display:flex;align-items:center;justify-content:center;min-height:54px;border-radius:14px;font:inherit;font-weight:600;text-decoration:none;border:1.5px solid var(--ink);color:var(--ink);background:var(--surface);cursor:pointer;padding:0 16px;text-align:center}
+.btn.primary{background:var(--ink);color:var(--surface)}
+.btn:focus-visible{outline:2px solid var(--ink);outline-offset:3px}
+ol{margin:0;padding-left:20px;line-height:1.55;color:var(--muted)}
+ol strong{color:var(--text)}
+.err{color:var(--danger);margin:0;line-height:1.5}
+</style>
+</head>
+<body>
+<main>
+  <h1>Aggiungi al Calendario</h1>
+  <section class="ev" id="list" aria-label="Eventi da aggiungere"></section>
+  <a class="btn primary" id="go" href="#">Aggiungi al Calendario</a>
+  <button class="btn" id="dl" type="button">Scarica il file dell’evento</button>
+  <ol>
+    <li>Tocca <strong>Aggiungi al Calendario</strong>: si apre la scheda del Calendario, tocca <strong>Aggiungi</strong> (o <strong>Aggiungi tutto</strong>).</li>
+    <li>Se non succede nulla, tocca <strong>Scarica il file dell’evento</strong>, poi apri il file dai download di Safari (freccia in alto) e tocca <strong>Aggiungi</strong>.</li>
+    <li>Fatto: chiudi questa finestra con la <strong>X</strong> in alto per tornare all’Agenda.</li>
+  </ol>
+  <p class="err" id="err" hidden>Non ho ricevuto l’evento. Torna all’Agenda e riprova da “Salva”.</p>
+</main>
+<script>
+(function(){
+  const $ = id => document.getElementById(id);
+  const params = new URLSearchParams(location.hash.slice(1));
+  let text = '', name = params.get('n') || 'evento.ics';
+  try{
+    const bin = atob(params.get('d') || '');
+    text = new TextDecoder().decode(Uint8Array.from(bin, c => c.charCodeAt(0)));
+  }catch(e){}
+  if (!text.startsWith('BEGIN:VCALENDAR')){
+    $('err').hidden = false; $('go').hidden = true; $('dl').hidden = true; return;
+  }
+  name = name.replace(/[^\w.-]/g, '_');
+
+  // Riepilogo leggibile degli eventi (titolo e data)
+  const unfold = text.replace(/\r\n[ \t]/g, '');
+  const unesc = v => v.replace(/\\n/g, ' ').replace(/\\([,;\\])/g, '$1');
+  const events = unfold.split('BEGIN:VEVENT').slice(1).map(b => {
+    const get = k => { const m = b.match(new RegExp('^' + k + '[^:\\r\\n]*:(.*)$', 'm')); return m ? m[1].trim() : ''; };
+    const ds = get('DTSTART'), d = ds.slice(0, 8);
+    const day = d ? new Date(+d.slice(0,4), +d.slice(4,6)-1, +d.slice(6,8)) : null;
+    const when = (day ? day.toLocaleDateString('it-IT', {weekday:'long', day:'numeric', month:'long'}) : '')
+               + (ds.length > 8 ? ` · ore ${ds.slice(9,11)}:${ds.slice(11,13)}` : ' · tutto il giorno');
+    return {title: unesc(get('SUMMARY')), when};
+  });
+  $('list').replaceChildren(...events.map(e => {
+    const div = document.createElement('div');
+    const t = document.createElement('strong'); t.textContent = e.title;
+    const w = document.createElement('span'); w.textContent = e.when;
+    div.append(t, w); return div;
+  }));
+  if (events.length > 1) $('go').textContent = `Aggiungi ${events.length} eventi al Calendario`;
+
+  // 1) Collegamento diretto: Safari passa il file al Calendario
+  const dataUrl = 'data:text/calendar;charset=utf-8,' + encodeURIComponent(text);
+  $('go').href = dataUrl;
+  // 2) Alternativa: file scaricato, da aprire dai download di Safari
+  $('dl').onclick = () => {
+    const blob = new Blob([text], {type:'text/calendar'});
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob); a.download = name;
+    document.body.append(a); a.click();
+    setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 4000);
+  };
+})();
+</script>
+</body>
+</html>
