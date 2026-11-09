@@ -367,7 +367,7 @@ body:has(#inkPanel:not([hidden])) .notes{padding-bottom:calc(136px + env(safe-ar
       </div>
     </div>
     <p class="err" id="bkErr" hidden></p>
-    <div class="actions"><span class="ver" style="margin-right:auto;align-self:center">Agenda 1.10</span><button class="btn" id="appUpdate">Aggiorna app</button><button class="btn" id="menuClose">Chiudi</button></div>
+    <div class="actions"><span class="ver" style="margin-right:auto;align-self:center">Agenda 1.11</span><button class="btn" id="appUpdate">Aggiorna app</button><button class="btn" id="menuClose">Chiudi</button></div>
   </div>
 </div>
 
@@ -1398,10 +1398,10 @@ function b64(text){
 function openInCalendar(list){
   const text = buildICS(list);
   const name = list.length === 1 ? `evento-${list[0].date}.ics` : 'eventi-agenda.ics';
-  const a = document.createElement('a');
-  a.href = `cal.html#n=${encodeURIComponent(name)}&d=${encodeURIComponent(b64(text))}`;
-  a.target = '_blank'; a.rel = 'noopener';
-  document.body.append(a); a.click(); a.remove();
+  const url = `cal.html#n=${encodeURIComponent(name)}&d=${encodeURIComponent(b64(text))}`;
+  // aperta da script: così il tasto "Torna all'Agenda" può chiudere la finestra
+  const w = window.open(url, '_blank');
+  if (!w){ const a = document.createElement('a'); a.href = url; a.target = '_blank'; document.body.append(a); a.click(); a.remove(); }
 }
 async function shareICS(text, name){
   const file = new File([text], name, {type:'text/calendar'});

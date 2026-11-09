@@ -31,6 +31,10 @@ h1{margin:0;font-family:var(--f-display);font-weight:500;font-size:30px;line-hei
 ol{margin:0;padding-left:20px;line-height:1.55;color:var(--muted)}
 ol strong{color:var(--text)}
 .err{color:var(--danger);margin:0;line-height:1.5}
+.top{display:flex}
+.back{display:inline-flex;align-items:center;gap:6px;min-height:44px;padding:0 14px 0 8px;border-radius:12px;border:1px solid var(--rule);background:var(--surface);color:var(--ink);font:inherit;font-weight:600;cursor:pointer}
+.xhint{margin:0;padding:12px 14px;border-radius:12px;background:var(--ink);color:var(--surface);line-height:1.4}
+.xhint strong{font-size:18px}
 .note{margin:0;font-size:14px;color:var(--muted);line-height:1.5}
 .note a{color:var(--ink)}
 .btn:disabled{opacity:.6}
@@ -38,6 +42,11 @@ ol strong{color:var(--text)}
 </head>
 <body>
 <main>
+  <div class="top">
+    <button class="back" id="back" type="button">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m15 18-6-6 6-6"/></svg>Torna all’Agenda</button>
+  </div>
+  <p class="xhint" id="xhint" hidden>Per tornare all’Agenda tocca la <strong>X</strong> in alto a sinistra.</p>
   <h1>Aggiungi al Calendario</h1>
   <section class="ev" id="list" aria-label="Eventi da aggiungere"></section>
   <button class="btn primary" id="go" type="button" disabled>Preparazione…</button>
@@ -45,14 +54,18 @@ ol strong{color:var(--text)}
   <ol>
     <li>Tocca <strong>Aggiungi al Calendario</strong>: si apre la scheda del Calendario, tocca <strong>Aggiungi</strong> (o <strong>Aggiungi tutto</strong>).</li>
     <li>Se non si apre, tocca <strong>Condividi</strong> e scegli <strong>Mail</strong>: invialo a te stesso e nella mail tocca l’evento → <strong>Aggiungi al calendario</strong>. Oppure <strong>Salva su File</strong> e apri il file da File.</li>
-    <li>Fatto: chiudi questa finestra con la <strong>X</strong> in alto per tornare all’Agenda.</li>
+    <li>Fatto: tocca <strong>Torna all’Agenda</strong> (o la <strong>X</strong> in alto).</li>
   </ol>
-  <p class="note">Verifica: <a href="prova.ics" id="test">apri un evento di prova</a>. Se questo si apre nel Calendario ma il tasto blu no, dillo a chi ti assiste: indica la strada giusta. L’evento di prova è fissato al 30 dicembre 2026, puoi eliminarlo dal Calendario.</p>
   <p class="err" id="err" hidden>Non ho ricevuto l’evento. Torna all’Agenda e riprova da “Salva”.</p>
 </main>
 <script>
 (function(){
   const $ = id => document.getElementById(id);
+  // Torna all'Agenda: chiude questa finestra; se iOS non lo permette, indica la X
+  $('back').onclick = () => {
+    try{ window.close(); }catch(e){}
+    setTimeout(() => { if (!window.closed){ $('xhint').hidden = false; $('xhint').scrollIntoView({block:'nearest'}); } }, 350);
+  };
   const params = new URLSearchParams(location.hash.slice(1));
   let text = '', name = params.get('n') || 'evento.ics';
   try{
