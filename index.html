@@ -25,7 +25,7 @@ body{margin:0}
 :root{
   --paper:#f5f6f9; --surface:#ffffff; --text:#1b1e2b; --muted:#666c86;
   --rule:#d8dbe8; --ink:#24318f; --ink-soft:#e6e9f8; --sel:#eef0fb;
-  --ev-riunione:#2f55c9; --ev-colazione:#b7791f; --ev-pranzo:#2f8a5b;
+  --ev-riunione:#2f55c9; --ev-colazione:#b7791f; --ev-pranzo:#2f8a5b; --ev-staff:#0e7c86;
   --ev-vtc:#7b4bbd; --ev-licenza:#c2414b; --danger:#b42d36;
   --shadow:0 18px 48px rgba(20,24,60,.18);
   /* Inchiostro: il nero segue il tema (nero su carta chiara, chiaro su scuro) */
@@ -39,13 +39,13 @@ body{margin:0}
 @media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
   --paper:#12141c; --surface:#1a1d28; --text:#e7e9f2; --muted:#959ab3;
   --rule:#2d3144; --ink:#a9b6ff; --ink-soft:#252b4a; --sel:#1f2336;
-  --ev-riunione:#7f9cff; --ev-colazione:#e2a84a; --ev-pranzo:#5cc28c;
+  --ev-riunione:#7f9cff; --ev-colazione:#e2a84a; --ev-pranzo:#5cc28c; --ev-staff:#4cc9d0;
   --ev-vtc:#b48cf0; --ev-licenza:#f07780; --danger:#f07780;
   --shadow:0 18px 48px rgba(0,0,0,.5); color-scheme:dark}}
 :root[data-theme="dark"]{
   --paper:#12141c; --surface:#1a1d28; --text:#e7e9f2; --muted:#959ab3;
   --rule:#2d3144; --ink:#a9b6ff; --ink-soft:#252b4a; --sel:#1f2336;
-  --ev-riunione:#7f9cff; --ev-colazione:#e2a84a; --ev-pranzo:#5cc28c;
+  --ev-riunione:#7f9cff; --ev-colazione:#e2a84a; --ev-pranzo:#5cc28c; --ev-staff:#4cc9d0;
   --ev-vtc:#b48cf0; --ev-licenza:#f07780; --danger:#f07780;
   --shadow:0 18px 48px rgba(0,0,0,.5); color-scheme:dark}
 
@@ -165,7 +165,7 @@ textarea,input{font:inherit;font-size:16px;color:var(--text)}
 .modal h3{margin:0;font-family:var(--f-display);font-size:26px;font-weight:500}
 .field{display:flex;flex-direction:column;gap:6px}
 .field>span,.lbl{font-size:12px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);font-weight:600}
-.types{display:grid;grid-template-columns:repeat(5,1fr);gap:6px}
+.types{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
 .type{border:1.5px solid var(--c);color:var(--c);background:none;border-radius:10px;padding:12px 4px;font-weight:600;font-size:12.5px;letter-spacing:.06em}
 .type[aria-pressed="true"]{background:var(--c);color:var(--surface)}
 .row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
@@ -184,7 +184,30 @@ textarea.inp{resize:none;line-height:1.45;overflow:hidden}
 .notes{position:fixed;inset:0;z-index:40;background:var(--paper);display:grid;grid-template-rows:auto auto 1fr;gap:10px;
   padding:calc(12px + env(safe-area-inset-top,0px)) max(16px,env(safe-area-inset-right,0px)) calc(80px + env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px))}
 .notes-bar{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
-.notes-bar h3{margin:0;font-family:var(--f-display);font-size:26px;font-weight:500;flex:1}
+.notes-bar h3{margin:0;font-family:var(--f-display);font-size:26px;font-weight:500;flex:none}
+.books{display:flex;gap:3px;padding:3px;border:1px solid var(--rule);border-radius:12px;background:var(--surface);overflow-x:auto;min-width:0;max-width:100%}
+.book{flex:none;border:0;background:none;border-radius:9px;height:36px;padding:0 14px;font-size:14px;font-weight:500;white-space:nowrap;color:var(--text)}
+.book[aria-current="true"]{background:var(--ink);color:var(--surface)}
+.book.add{color:var(--ink)}
+.newbook{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.newbook .inp{width:min(280px,100%)}
+#mIndex{flex:none;width:280px;display:flex;flex-direction:column;background:var(--surface);border:1px solid var(--rule);border-radius:12px;overflow:hidden;min-height:0}
+.mhead{display:flex;flex-direction:column;gap:8px;padding:12px;border-bottom:1px solid var(--rule)}
+.mhead .lbl{color:var(--ev-staff)}
+.mlist{overflow-y:auto;-webkit-overflow-scrolling:touch;min-height:0;flex:1}
+.mi{display:flex;flex-direction:column;gap:2px;width:100%;text-align:left;border:0;border-bottom:1px solid var(--rule);background:none;padding:10px 14px;color:var(--text)}
+.mi strong{font-size:14px;font-weight:600}
+.mi span{font-size:13px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.mi[aria-current="true"]{background:var(--sel);box-shadow:inset 4px 0 0 var(--ev-staff)}
+.m-empty{align-self:center;max-width:420px;text-align:center;display:flex;flex-direction:column;gap:14px;align-items:center;color:var(--muted);padding:24px}
+.m-empty p{margin:0;line-height:1.5}
+.notes.is-meeting .page-wrap{justify-content:flex-start;gap:16px}
+.page-meta input[type=date]{font:inherit;font-size:12px;color:var(--ink);border:1px solid var(--rule);border-radius:6px;padding:2px 6px;background:var(--surface)}
+.act-list{display:flex;flex-direction:column;gap:6px;max-height:50vh;overflow-y:auto}
+.act-row{display:flex;align-items:center;gap:10px;padding:10px 12px;border:1px solid var(--rule);border-radius:10px;line-height:1.35}
+.act-row input{width:22px;height:22px;flex:none;accent-color:var(--ink)}
+.act-row span{flex:1;min-width:0}
+.act-row em{font-style:normal;font-size:12px;color:var(--muted);flex:none}
 .tabs{display:flex;gap:6px;overflow-x:auto;padding-bottom:2px}
 .tab{flex:none;border:1px solid var(--rule);background:var(--surface);border-radius:10px;padding:8px 14px;font-size:14px;max-width:180px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .tab[aria-current="true"]{border-color:var(--ink);color:var(--ink);font-weight:600}
@@ -211,7 +234,7 @@ body[data-mode="scribble"] .point textarea,body[data-mode="scribble"] .memo{box-
 body:has(#inkPanel:not([hidden])) .app{padding-bottom:136px}
 body:has(#inkPanel:not([hidden])) .notes{padding-bottom:calc(136px + env(safe-area-inset-bottom,0px))}
 .dock{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(12px + env(safe-area-inset-bottom,0px));z-index:70;display:flex;flex-direction:column;align-items:center;gap:8px;width:max-content;max-width:calc(100% - 32px)}
-#eventOverlay:not([hidden]) ~ .dock,#menuOverlay:not([hidden]) ~ .dock{display:none}
+#eventOverlay:not([hidden]) ~ .dock,#menuOverlay:not([hidden]) ~ .dock,#actOverlay:not([hidden]) ~ .dock{display:none}
 .modes{display:flex;flex-wrap:wrap;justify-content:center;gap:4px;background:var(--surface);border:1px solid var(--rule);border-radius:14px;padding:4px;box-shadow:var(--shadow)}
 .mode{height:42px;padding:0 16px;border:0;border-radius:10px;background:none;font-weight:500;font-size:14px;display:flex;align-items:center;gap:8px;white-space:nowrap}
 .mode[aria-pressed="true"]{background:var(--ink);color:var(--surface)}
@@ -249,7 +272,9 @@ body:has(#inkPanel:not([hidden])) .notes{padding-bottom:calc(136px + env(safe-ar
   .cal-grid{grid-auto-rows:40px}
   .weekend .day{min-height:110px}
   .points{overflow:visible}
-  .types{grid-template-columns:repeat(3,1fr)}
+  .types{grid-template-columns:repeat(2,1fr)}
+  .notes.is-meeting .page-wrap{flex-direction:column}
+  #mIndex{width:100%;max-height:200px}
   .weeknav{margin-left:0}
 }
 @media (prefers-reduced-motion:no-preference){
@@ -334,6 +359,7 @@ body:has(#inkPanel:not([hidden])) .notes{padding-bottom:calc(136px + env(safe-ar
     <p class="err" id="evErr" hidden></p>
     <div class="actions">
       <button type="button" class="btn danger" id="evDelete" hidden>Elimina</button>
+      <button type="button" class="btn" id="evMinutes" hidden>Apri il verbale</button>
       <button type="button" class="btn" id="evCancel">Annulla</button>
       <button type="submit" class="btn primary">Salva</button>
     </div>
@@ -367,7 +393,21 @@ body:has(#inkPanel:not([hidden])) .notes{padding-bottom:calc(136px + env(safe-ar
       </div>
     </div>
     <p class="err" id="bkErr" hidden></p>
-    <div class="actions"><span class="ver" style="margin-right:auto;align-self:center">Agenda 1.11</span><button class="btn" id="appUpdate">Aggiorna app</button><button class="btn" id="menuClose">Chiudi</button></div>
+    <div class="actions"><span class="ver" style="margin-right:auto;align-self:center">Agenda 1.12</span><button class="btn" id="appUpdate">Aggiorna app</button><button class="btn" id="menuClose">Chiudi</button></div>
+  </div>
+</div>
+
+<!-- AZIONI DEL VERBALE → PUNTI -->
+<div class="overlay" id="actOverlay" hidden>
+  <div class="modal" role="dialog" aria-labelledby="actTitle">
+    <h3 id="actTitle">Azioni → punti</h3>
+    <p class="bk-text">Le azioni scelte vanno nella <strong>prima riga libera</strong> dei punti di <strong id="actWeek"></strong>.</p>
+    <div class="act-list" id="actList"></div>
+    <p class="bk-text" id="actEmpty" hidden>Nessuna azione nel verbale. Scrivile sotto <strong>AZIONI</strong>, una per riga.</p>
+    <div class="actions">
+      <button type="button" class="btn" id="actCancel">Annulla</button>
+      <button type="button" class="btn primary" id="actOk">Aggiungi ai punti</button>
+    </div>
   </div>
 </div>
 
@@ -375,19 +415,39 @@ body:has(#inkPanel:not([hidden])) .notes{padding-bottom:calc(136px + env(safe-ar
 <div class="notes" id="notes" hidden>
   <div class="notes-bar">
     <h3>Blocco note</h3>
+    <div class="books" id="books" role="tablist" aria-label="Quaderni"></div>
+    <span class="spacer"></span>
+    <button class="btn" id="sendActions" hidden>Azioni → punti</button>
     <button class="icon-btn" id="prevSheet" aria-label="Foglio precedente">‹</button>
     <button class="icon-btn" id="nextSheet" aria-label="Foglio successivo">›</button>
     <button class="btn danger" id="delSheet" style="margin-right:0">Elimina foglio</button>
     <button class="btn primary" id="closeNotes">Chiudi</button>
   </div>
+  <div class="newbook" id="newBook" hidden>
+    <input class="inp" id="newBookName" type="text" maxlength="24" placeholder="Nome del nuovo quaderno" aria-label="Nome del nuovo quaderno">
+    <button class="btn primary" id="newBookOk" type="button">Crea quaderno</button>
+    <button class="btn" id="newBookCancel" type="button">Annulla</button>
+  </div>
   <nav class="tabs" id="tabs" aria-label="Fogli"></nav>
   <div class="page-wrap">
+    <aside id="mIndex" hidden aria-label="Indice delle riunioni">
+      <div class="mhead">
+        <span class="lbl">Staff meeting · <span id="mCount"></span></span>
+        <button class="btn primary" id="mNew" type="button">+ Nuovo staff meeting</button>
+      </div>
+      <div class="mlist" id="mList"></div>
+    </aside>
+    <div class="m-empty" id="mEmpty" hidden>
+      <p>Non c’è ancora nessuno staff meeting.<br>Il verbale nuovo ha già titolo, data e le sezioni Partecipanti, Punti trattati, Decisioni e Azioni.</p>
+      <button class="btn primary" id="mEmptyNew" type="button">+ Nuovo staff meeting</button>
+    </div>
     <div class="page">
       <div class="page-meta" id="pageMeta"></div>
       <textarea id="sheetText" aria-label="Testo del foglio" placeholder="Scrivi qui con la tastiera o con Apple Pencil…"></textarea>
     </div>
     <button class="fab" id="addSheet" aria-label="Aggiungi foglio">+</button>
   </div>
+  <span id="mDateWrap"><input type="date" id="mDate" aria-label="Data della riunione"></span>
 </div>
 
 <!-- BARRA IN BASSO: modalità di scrittura -->
@@ -445,7 +505,8 @@ const TYPES = [
   {id:'COLAZIONE', c:'--ev-colazione'},
   {id:'PRANZO',    c:'--ev-pranzo'},
   {id:'VTC',       c:'--ev-vtc'},
-  {id:'LICENZA',   c:'--ev-licenza'}
+  {id:'LICENZA',   c:'--ev-licenza'},
+  {id:'STAFF MEETING', c:'--ev-staff'}
 ];
 const typeColor = id => `var(${(TYPES.find(t=>t.id===id)||TYPES[0]).c})`;
 const DOW = ['L','Ma','Me','G','V','S','D'];
@@ -730,6 +791,7 @@ function setType(id){
   chosenType = id;
   [...$('types').children].forEach(b => b.setAttribute('aria-pressed', b.textContent===id));
   if(id==='LICENZA' && !editing){ $('evAllDay').checked = true; syncAllDay(); }
+  $('evMinutes').hidden = !(editing && id === 'STAFF MEETING');   // solo per eventi già salvati
 }
 function syncAllDay(){
   const all = $('evAllDay').checked;
@@ -819,49 +881,245 @@ $('evDelete').onclick = () => {
 };
 
 /* =========================================================
-   MODULO NOTE (fogli bianchi, salvati in locale)
+   MODULO NOTE: quaderni (Note, STAFF MEETING e quelli che aggiungi)
+   Ogni quaderno ha i suoi fogli. STAFF MEETING è un quaderno "verbali":
+   ogni foglio ha una data, un modello già impostato e un indice per data.
    ========================================================= */
+const BOOK_NOTE = 'note', BOOK_STAFF = 'staff';
+const mDateWrapEl = $('mDateWrap'), mDateEl = $('mDate');   // spostati dentro l'intestazione del foglio
+const MEET_SECTIONS = /^(PARTECIPANTI|PUNTI TRATTATI|DECISIONI|AZIONI)\b/i;
+function ensureBooks(){
+  data.books ||= [{id:BOOK_NOTE, name:'Note'}, {id:BOOK_STAFF, name:'STAFF MEETING', meeting:true}];
+  if (!data.books.some(b => b.id === BOOK_STAFF)) data.books.splice(1, 0, {id:BOOK_STAFF, name:'STAFF MEETING', meeting:true});
+  data.notes.forEach(n => { n.book ||= BOOK_NOTE; });
+  if (!data.books.some(b => b.id === data.book)) data.book = BOOK_NOTE;
+  data.bookPos ||= {};
+}
+const curBook = () => data.books.find(b => b.id === data.book) || data.books[0];
+function bookSheets(id = data.book){                       // indici in data.notes, in ordine
+  const b = data.books.find(x => x.id === id);
+  const idx = data.notes.map((n, i) => i).filter(i => (data.notes[i].book || BOOK_NOTE) === id);
+  if (b && b.meeting) idx.sort((a, c) => (data.notes[a].date || '').localeCompare(data.notes[c].date || '') || data.notes[a].created - data.notes[c].created);
+  return idx;
+}
+const firstLine = t => (t.split('\n').find(l => l.trim()) || '').trim();
+const longDate = k => fmt(fromKey(k), {weekday:'long', day:'numeric', month:'long', year:'numeric'});
+
+/* ---------- Verbale di staff meeting ---------- */
+function meetingText(dateKey, time){
+  return `Staff Meeting – ${longDate(dateKey)}${time ? ', ore ' + time : ''}\n\n` +
+         `PARTECIPANTI\n\n\n` +
+         `PUNTI TRATTATI\n1. \n2. \n3. \n\n` +
+         `DECISIONI\n- \n\n` +
+         `AZIONI (chi · cosa · entro)\n- \n- \n`;
+}
+function newMeeting(dateKey, ev){
+  const n = {id:Date.now(), text:meetingText(dateKey, ev && !ev.allDay ? ev.time : ''), created:Date.now(),
+             book:BOOK_STAFF, date:dateKey, eventId: ev ? ev.id : undefined, sent:[]};
+  data.notes.push(n); data.book = BOOK_STAFF; data.noteIdx = data.notes.length - 1; data.bookPos[BOOK_STAFF] = n.id;
+  save(); return n;
+}
+// Le azioni sono le righe sotto "AZIONI", una per riga (con o senza "-")
+function parseActions(text){
+  const out = []; let inA = false;
+  for (const raw of text.split('\n')){
+    const t = raw.trim();
+    if (/^AZIONI\b/i.test(t)){ inA = true; continue; }
+    if (MEET_SECTIONS.test(t)){ inA = false; continue; }
+    if (!inA) continue;
+    const v = t.replace(/^[-•*–]\s*/, '').replace(/^\d+[.)]\s*/, '').trim();
+    if (v) out.push(v);
+  }
+  return out;
+}
+function meetingSummary(n){                                // prima riga utile dopo il titolo
+  const lines = n.text.split('\n').slice(1).map(l => l.trim());
+  const l = lines.find(x => x && !MEET_SECTIONS.test(x) && x.replace(/^([-•*–]|\d+[.)])\s*/, '').trim());
+  return l ? l.replace(/^([-•*–]|\d+[.)])\s*/, '') : 'Da compilare';
+}
+
+/* ---------- Disegno della schermata ---------- */
 function renderNotes(){
-  if(!data.notes.length) data.notes.push({id:Date.now(), text:'', created:Date.now()});
-  data.noteIdx = Math.min(Math.max(0,data.noteIdx), data.notes.length-1);
+  ensureBooks();
+  const book = curBook();
+  if (!book.meeting && !bookSheets().length) data.notes.push({id:Date.now(), text:'', created:Date.now(), book:book.id});
+  const list = bookSheets();
+  if (!list.includes(data.noteIdx)){
+    const j = data.notes.findIndex(n => n.id === data.bookPos[book.id]);
+    data.noteIdx = list.includes(j) ? j : (list.length ? list[list.length - 1] : -1);
+  }
+  const has = list.includes(data.noteIdx);
+  data.bookPos[book.id] = has ? data.notes[data.noteIdx].id : null;
+
+  // linguette dei quaderni
+  $('books').replaceChildren(...data.books.map(b => {
+    const x = el('button', 'book', b.name); x.type = 'button';
+    x.setAttribute('aria-current', b.id === book.id);
+    x.onclick = () => { data.book = b.id; data.noteIdx = -1; $('newBook').hidden = true; save(); renderNotes(); };
+    return x;
+  }), (() => { const a = el('button', 'book add', '+ Quaderno'); a.type = 'button';
+    a.onclick = () => { $('newBook').hidden = false; $('newBookName').value = ''; $('newBookName').focus(); }; return a; })());
+
+  $('notes').classList.toggle('is-meeting', !!book.meeting);
+  $('tabs').hidden = !!book.meeting;
+  $('mIndex').hidden = !book.meeting;
+  $('sendActions').hidden = !(book.meeting && has);
+  document.querySelector('.page').hidden = !has;
+  $('mEmpty').hidden = has;
+  $('addSheet').setAttribute('aria-label', book.meeting ? 'Nuovo staff meeting' : 'Aggiungi foglio');
+  const pos = list.indexOf(data.noteIdx);
+  $('prevSheet').disabled = pos <= 0;
+  $('nextSheet').disabled = pos < 0 || pos === list.length - 1;
+  $('delSheet').disabled = !has;
+  $('delSheet').classList.remove('armed');
+  $('delSheet').textContent = book.meeting ? 'Elimina verbale' : 'Elimina foglio';
+  if (book.meeting) renderIndex(list); else renderTabs(list);
+  if (!has) return;
+
   const cur = data.notes[data.noteIdx];
-  const tabs = $('tabs'); tabs.replaceChildren();
-  data.notes.forEach((n,i) => {
-    const first = (n.text.split('\n').find(l=>l.trim())||'').trim();
-    const t = el('button','tab', `${i+1}. ${first ? first.slice(0,22) : 'Foglio vuoto'}`);
-    t.setAttribute('aria-current', i===data.noteIdx);
-    t.onclick = () => { data.noteIdx = i; save(); renderNotes(); };
-    tabs.append(t);
-  });
-  $('pageMeta').textContent = `Foglio ${data.noteIdx+1} di ${data.notes.length} · creato il ${new Date(cur.created||cur.id).toLocaleDateString('it-IT')}`;
+  if (book.meeting){
+    $('pageMeta').replaceChildren('Staff meeting del ', mDateWrapEl);
+    mDateEl.value = cur.date || keyOf(today);
+  } else {
+    $('pageMeta').replaceChildren(`${book.name} · foglio ${pos + 1} di ${list.length} · creato il ${new Date(cur.created || cur.id).toLocaleDateString('it-IT')}`);
+  }
   $('sheetText').value = cur.text;
-  $('prevSheet').disabled = data.noteIdx===0;
-  $('nextSheet').disabled = data.noteIdx===data.notes.length-1;
-  $('delSheet').classList.remove('armed'); $('delSheet').textContent = 'Elimina foglio';
-  tabs.children[data.noteIdx]?.scrollIntoView({inline:'nearest', block:'nearest'});
   $('sheetText').readOnly = mode === 'ink';
   document.querySelector('.page').scrollTop = 0;
   sizeSheet();
 }
+function renderTabs(list){
+  const tabs = $('tabs');
+  tabs.replaceChildren(...list.map((i, k) => {
+    const f = firstLine(data.notes[i].text);
+    const t = el('button', 'tab', `${k + 1}. ${f ? f.slice(0, 22) : 'Foglio vuoto'}`);
+    t.setAttribute('aria-current', i === data.noteIdx);
+    t.onclick = () => { data.noteIdx = i; save(); renderNotes(); };
+    return t;
+  }));
+  tabs.children[list.indexOf(data.noteIdx)]?.scrollIntoView({inline:'nearest', block:'nearest'});
+}
+function renderIndex(list){                                // indice delle riunioni, dalla più recente
+  $('mCount').textContent = list.length === 1 ? '1 riunione' : `${list.length} riunioni`;
+  $('mList').replaceChildren(...list.slice().reverse().map(i => {
+    const n = data.notes[i], acts = parseActions(n.text).length;
+    const b = el('button', 'mi'); b.type = 'button';
+    b.setAttribute('aria-current', i === data.noteIdx);
+    b.append(el('strong', null, fmt(fromKey(n.date || keyOf(new Date(n.created))), {weekday:'short', day:'numeric', month:'long', year:'numeric'})),
+             el('span', null, meetingSummary(n) + (acts ? ` · ${acts} ${acts === 1 ? 'azione' : 'azioni'}` : '')));
+    b.onclick = () => { data.noteIdx = i; save(); renderNotes(); };
+    return b;
+  }));
+}
+
+/* ---------- Azioni ---------- */
 $('sheetText').oninput = e => {
-  data.notes[data.noteIdx].text = e.target.value; save(); sizeSheet();
-  const first = (e.target.value.split('\n').find(l=>l.trim())||'').trim();
-  $('tabs').children[data.noteIdx].textContent = `${data.noteIdx+1}. ${first ? first.slice(0,22) : 'Foglio vuoto'}`;
+  const cur = data.notes[data.noteIdx]; if (!cur) return;
+  cur.text = e.target.value; save(); sizeSheet();
+  const list = bookSheets();
+  if (curBook().meeting) renderIndex(list);
+  else { const t = $('tabs').children[list.indexOf(data.noteIdx)]; const f = firstLine(cur.text); if (t) t.textContent = `${list.indexOf(data.noteIdx) + 1}. ${f ? f.slice(0, 22) : 'Foglio vuoto'}`; }
 };
-$('addSheet').onclick = () => {
-  data.notes.push({id:Date.now(), text:'', created:Date.now()});
-  data.noteIdx = data.notes.length-1; save(); renderNotes(); $('sheetText').focus();
+mDateEl.onchange = () => {                                  // cambia la data della riunione
+  const cur = data.notes[data.noteIdx]; if (!cur || !mDateEl.value) return;
+  cur.date = mDateEl.value;
+  // aggiorna anche il titolo, se è ancora quello del modello (tiene l'eventuale orario)
+  cur.text = cur.text.replace(/^Staff Meeting – [^,\n]*(,? ?ore \d\d:\d\d)?/, (m, ora) => `Staff Meeting – ${longDate(cur.date)}${ora ? ', ' + ora.replace(/^,? ?/, '') : ''}`);
+  save(); renderNotes();
 };
-$('prevSheet').onclick = () => { data.noteIdx--; save(); renderNotes(); };
-$('nextSheet').onclick = () => { data.noteIdx++; save(); renderNotes(); };
+function addSheet(){
+  ensureBooks();
+  const book = curBook();
+  if (book.meeting) newMeeting(keyOf(today));
+  else { data.notes.push({id:Date.now(), text:'', created:Date.now(), book:book.id}); data.noteIdx = data.notes.length - 1; save(); }
+  renderNotes();
+  if (!book.meeting && mode !== 'ink') $('sheetText').focus();
+}
+$('addSheet').onclick = addSheet;
+$('mNew').onclick = addSheet;
+$('mEmptyNew').onclick = addSheet;
+$('prevSheet').onclick = () => { const l = bookSheets(), p = l.indexOf(data.noteIdx); if (p > 0){ data.noteIdx = l[p - 1]; save(); renderNotes(); } };
+$('nextSheet').onclick = () => { const l = bookSheets(), p = l.indexOf(data.noteIdx); if (p >= 0 && p < l.length - 1){ data.noteIdx = l[p + 1]; save(); renderNotes(); } };
 $('delSheet').onclick = () => {
-  const b = $('delSheet');
-  if(!b.classList.contains('armed')){ b.classList.add('armed'); b.textContent='Conferma'; return; }
-  delete data.ink['n:'+data.notes[data.noteIdx].id];
-  data.notes.splice(data.noteIdx,1); data.noteIdx--; save(); renderNotes(); toast('Foglio eliminato');
+  const b = $('delSheet'), cur = data.notes[data.noteIdx]; if (!cur) return;
+  if (!b.classList.contains('armed')){ b.classList.add('armed'); b.textContent = 'Conferma'; return; }
+  delete data.ink['n:' + cur.id];
+  data.notes.splice(data.noteIdx, 1); data.noteIdx = -1; data.bookPos[data.book] = null;
+  save(); renderNotes(); toast(curBook().meeting ? 'Verbale eliminato' : 'Foglio eliminato');
 };
+// nuovo quaderno
+$('newBookOk').onclick = () => {
+  const name = $('newBookName').value.trim().slice(0, 24);
+  if (!name){ $('newBookName').focus(); return; }
+  ensureBooks();
+  const b = {id:'b' + Date.now(), name};
+  data.books.push(b); data.book = b.id; data.noteIdx = -1;
+  $('newBook').hidden = true; save(); renderNotes(); toast(`Quaderno “${name}” creato`);
+};
+$('newBookName').onkeydown = e => { if (e.key === 'Enter'){ e.preventDefault(); $('newBookOk').click(); } };
+$('newBookCancel').onclick = () => { $('newBook').hidden = true; };
+
+/* ---------- Azioni del verbale → prima riga libera dei punti della settimana ---------- */
+function freeRows(wk){                                      // righe senza testo e senza scrittura a penna
+  const dd = weekData(wk);
+  while (dd.list.length < MIN_POINTS) dd.list.push('');
+  const inked = new Set((data.ink['pw:' + wk] || []).filter(s => s.r != null).map(s => s.r));
+  return {dd, isFree: i => !(dd.list[i] || '').trim() && !inked.has(i)};
+}
+function addToPoints(items){
+  const wk = curWeek(), {dd, isFree} = freeRows(wk), rows = [];
+  let i = 0;
+  for (const it of items){
+    while (i < dd.list.length && !isFree(i)) i++;
+    if (i >= dd.list.length) dd.list.push('');                // lista piena: si aggiunge una riga in fondo
+    dd.list[i] = it; rows.push(i + 1); i++;
+  }
+  return rows;
+}
+let actItems = [];
+$('sendActions').onclick = () => {
+  const cur = data.notes[data.noteIdx]; if (!cur) return;
+  writeNow();
+  const sent = new Set(cur.sent || []);
+  actItems = parseActions(cur.text);
+  const wk = curWeek(), lb = weekLabel(wk);
+  $('actWeek').textContent = `${lb.title} (${lb.range})`;
+  $('actList').replaceChildren(...actItems.map((a, k) => {
+    const row = el('label', 'act-row');
+    const cb = el('input'); cb.type = 'checkbox'; cb.id = 'act' + k; cb.checked = !sent.has(a);
+    const tx = el('span', null, a);
+    row.append(cb, tx);
+    if (sent.has(a)) row.append(el('em', null, 'già nei punti'));
+    return row;
+  }));
+  $('actEmpty').hidden = actItems.length > 0;
+  $('actOk').hidden = !actItems.length;
+  $('actOverlay').hidden = false;
+};
+$('actCancel').onclick = () => { $('actOverlay').hidden = true; };
+$('actOk').onclick = () => {
+  const cur = data.notes[data.noteIdx];
+  const chosen = actItems.filter((a, k) => $('act' + k).checked);
+  if (!chosen.length){ toast('Scegli almeno un’azione'); return; }
+  const rows = addToPoints(chosen);
+  cur.sent = [...new Set([...(cur.sent || []), ...chosen])];
+  writeNow(); renderPoints(); renderNotes();
+  $('actOverlay').hidden = true;
+  toast(rows.length === 1 ? `Azione aggiunta al punto ${rows[0]}` : `Azioni aggiunte ai punti ${rows.join(', ')}`);
+};
+
+/* ---------- Dall'evento STAFF MEETING al suo verbale ---------- */
+function openMinutes(ev){
+  ensureBooks();
+  const i = data.notes.findIndex(n => n.eventId === ev.id);
+  if (i < 0) newMeeting(ev.date, ev);
+  else { data.book = BOOK_STAFF; data.noteIdx = i; save(); }
+  $('notes').hidden = false; renderNotes();
+}
+$('evMinutes').onclick = () => { const ev = editing; if (!ev) return; closeEvent(); openMinutes(ev); };
+
 $('openNotes').onclick = () => { $('notes').hidden = false; renderNotes(); };
-$('closeNotes').onclick = () => { $('notes').hidden = true; };
+$('closeNotes').onclick = () => { $('notes').hidden = true; $('newBook').hidden = true; };
 
 document.addEventListener('keydown', e => {
   if(e.key!=='Escape') return;
@@ -1175,7 +1433,7 @@ function adjustSpace(sp, delta){
 }
 $('enterBtn').onclick = () => {
   let sp;
-  if (!$('notes').hidden) sp = {kind:'n', id:data.notes[data.noteIdx].id, d:NOTE_LINES};
+  if (!$('notes').hidden){ if (!data.notes[data.noteIdx] || document.querySelector('.page').hidden){ toast('Apri prima un foglio'); return; } sp = {kind:'n', id:data.notes[data.noteIdx].id, d:NOTE_LINES}; }
   else if (lastInk && lastInk.kind === 'p' && lastInk.day === ptsWeek) sp = {kind:'p', day:ptsWeek, row:lastInk.row, d:1};
   else { toast('Scrivi o tocca col dito un punto della lista, poi premi Invio'); return; }
   adjustSpace(sp, sp.d); pushUndo({space:sp});
