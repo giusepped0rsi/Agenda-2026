@@ -228,6 +228,30 @@ textarea.inp{resize:none;line-height:1.45;overflow:hidden}
 .pastebar{left:50%;transform:translateX(-50%);top:calc(12px + env(safe-area-inset-top,0px));max-width:calc(100% - 32px);background:var(--ink);color:var(--surface);border-color:var(--ink)}
 .pastebar span{font-size:14px;line-height:1.35}
 body.pasting .left,body.pasting .points,body.pasting .page{cursor:copy}
+/* contenuto fluttuante da spostare */
+.ghost-sel{position:fixed;z-index:62;display:flex;flex-direction:column;align-items:flex-start;gap:6px}
+#ghostBody{position:relative;border:1.5px dashed var(--ink);border-radius:6px;background:color-mix(in srgb, var(--surface) 72%, transparent);
+  touch-action:none;cursor:grab;box-shadow:0 8px 24px rgba(20,24,60,.18)}
+#ghostInk{position:absolute;left:0;top:0;pointer-events:none}
+.ghost-txt{position:relative;margin:0;padding:2px 4px;font-size:16px;line-height:1.5;white-space:pre-wrap;max-width:60vw;color:var(--text);pointer-events:none}
+.ghost-bar{display:flex;gap:6px;background:var(--surface);border:1px solid var(--ink);border-radius:12px;padding:4px;box-shadow:var(--shadow)}
+.ghost-bar .btn{height:38px;padding:0 14px}
+.ghost-hint{font-size:12px;color:var(--muted);align-self:center;padding:0 6px}
+/* ordina */
+.ord-list{display:flex;flex-direction:column;gap:6px;max-height:34vh;overflow-y:auto}
+.ord-row{display:flex;align-items:center;gap:6px;padding:6px 6px 6px 12px;border:1px solid var(--rule);border-radius:10px}
+.ord-row.cur{border-color:var(--ink);background:var(--ink-soft)}
+.ord-row span{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ord-row .icon-btn{width:40px;height:40px}
+/* export */
+.modal.exp{width:min(980px,100%)}
+.exp-opts{display:flex;flex-direction:column;gap:8px}
+.exp-opts input{width:22px;height:22px;accent-color:var(--ink)}
+.exp-prev{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:16px;max-height:52vh;overflow:auto;padding:4px;background:var(--paper);border-radius:12px}
+.exp-page{margin:0;display:flex;flex-direction:column;gap:6px;align-items:center}
+.exp-page.land{grid-column:span 2}
+.exp-page canvas{width:100%;height:auto;border:1px solid var(--rule);box-shadow:0 4px 14px rgba(20,24,60,.12);background:#fff}
+.exp-page figcaption{font-size:12px;color:var(--muted)}
 .page{width:min(860px,100%);height:100%;position:relative;overflow-y:auto;-webkit-overflow-scrolling:touch;border-radius:6px;box-shadow:var(--shadow);
   background:linear-gradient(to right,transparent 55px,var(--margin) 55px,var(--margin) 56px,transparent 56px) var(--surface);background-attachment:local}
 .page-meta{font-family:var(--f-mono);font-size:12px;color:var(--muted);padding:14px 28px 0 72px;font-variant-numeric:tabular-nums}
@@ -250,7 +274,7 @@ body[data-mode="scribble"] .point textarea,body[data-mode="scribble"] .memo{box-
 body:has(#inkPanel:not([hidden])) .app{padding-bottom:136px}
 body:has(#inkPanel:not([hidden])) .notes{padding-bottom:calc(136px + env(safe-area-inset-bottom,0px))}
 .dock{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(12px + env(safe-area-inset-bottom,0px));z-index:70;display:flex;flex-direction:column;align-items:center;gap:8px;width:max-content;max-width:calc(100% - 32px)}
-#eventOverlay:not([hidden]) ~ .dock,#menuOverlay:not([hidden]) ~ .dock,#actOverlay:not([hidden]) ~ .dock{display:none}
+#eventOverlay:not([hidden]) ~ .dock,#menuOverlay:not([hidden]) ~ .dock,#actOverlay:not([hidden]) ~ .dock,#expOverlay:not([hidden]) ~ .dock,#ordOverlay:not([hidden]) ~ .dock{display:none}
 .modes{display:flex;flex-wrap:wrap;justify-content:center;gap:4px;background:var(--surface);border:1px solid var(--rule);border-radius:14px;padding:4px;box-shadow:var(--shadow)}
 .mode{height:42px;padding:0 16px;border:0;border-radius:10px;background:none;font-weight:500;font-size:14px;display:flex;align-items:center;gap:8px;white-space:nowrap}
 .mode[aria-pressed="true"]{background:var(--ink);color:var(--surface)}
@@ -272,6 +296,18 @@ body:has(#inkPanel:not([hidden])) .notes{padding-bottom:calc(136px + env(safe-ar
 .wt[aria-pressed="true"]{border-color:var(--ink);background:var(--ink-soft);box-shadow:0 0 0 1px var(--ink)}
 .tool.armed{background:var(--danger);border-color:var(--danger);color:var(--surface)}
 
+/* barra in alto compatta quando lo spazio è poco: resta su una riga */
+.daybanner .sm{display:none}
+@media (max-width:1200px){
+  .topbar{gap:8px}
+  .today-title{font-size:21px}
+  .weeknav{margin-left:0}
+  .main-btn{padding:0 14px}
+  .daybanner{padding:3px}
+  .daybanner p{display:none}
+  .daybanner .lg{display:none}
+  .daybanner .sm{display:inline}
+}
 /* ---------- Schermi stretti (iPad verticale / telefono) ---------- */
 @media (max-height:680px) and (min-width:701px){
   .cal-grid{grid-auto-rows:17px}
@@ -311,11 +347,12 @@ body:has(#inkPanel:not([hidden])) .notes{padding-bottom:calc(136px + env(safe-ar
     <!-- AVVISO DEL BACKUP GIORNALIERO -->
     <div class="daybanner" id="dayBanner" hidden role="status">
       <p><strong>Backup di oggi</strong> pronto</p>
-      <button class="btn primary" id="dbSave">Salva in File</button>
+      <button class="btn primary" id="dbSave"><span class="lg">Salva in File</span><span class="sm">Salva backup</span></button>
       <button class="icon-btn" id="dbClose" aria-label="Chiudi l'avviso">×</button>
     </div>
     <div class="spacer"></div>
     <!-- I due pulsanti principali richiesti -->
+    <button class="ghost" id="openExport" aria-label="Esporta in PDF">Export</button>
     <button class="ghost" id="openMenu" aria-label="Backup e ripristino">Backup<i class="badge" id="bkBadge" hidden></i></button>
     <button class="main-btn" id="openNotes">Note</button>
     <button class="main-btn primary" id="openEvent">Eventi</button>
@@ -409,7 +446,31 @@ body:has(#inkPanel:not([hidden])) .notes{padding-bottom:calc(136px + env(safe-ar
       </div>
     </div>
     <p class="err" id="bkErr" hidden></p>
-    <div class="actions"><span class="ver" style="margin-right:auto;align-self:center">Agenda 1.13</span><button class="btn" id="appUpdate">Aggiorna app</button><button class="btn" id="menuClose">Chiudi</button></div>
+    <div class="actions"><span class="ver" style="margin-right:auto;align-self:center">Agenda 1.14</span><button class="btn" id="appUpdate">Aggiorna app</button><button class="btn" id="menuClose">Chiudi</button></div>
+  </div>
+</div>
+
+<!-- EXPORT PDF CON ANTEPRIMA -->
+<div class="overlay" id="expOverlay" hidden>
+  <div class="modal exp" role="dialog" aria-labelledby="expTitle">
+    <h3 id="expTitle">Export PDF</h3>
+    <div class="exp-opts" id="expOpts"></div>
+    <div class="exp-prev" id="expPrev" aria-label="Anteprima delle pagine"></div>
+    <p class="bk-text" id="expInfo"></p>
+    <div class="actions">
+      <button type="button" class="btn" id="expCancel">Annulla</button>
+      <button type="button" class="btn primary" id="expSave">Salva PDF</button>
+    </div>
+  </div>
+</div>
+
+<!-- ORDINA QUADERNI E FOGLI -->
+<div class="overlay" id="ordOverlay" hidden>
+  <div class="modal" role="dialog" aria-labelledby="ordTitle">
+    <h3 id="ordTitle">Ordina</h3>
+    <div class="field"><span class="lbl">Quaderni</span><div class="ord-list" id="ordBooks"></div></div>
+    <div class="field"><span class="lbl" id="ordSheetsLbl">Fogli</span><div class="ord-list" id="ordSheets"></div><p class="bk-text" id="ordHint" hidden></p></div>
+    <div class="actions"><button type="button" class="btn primary" id="ordClose">Fatto</button></div>
   </div>
 </div>
 
@@ -441,9 +502,11 @@ body:has(#inkPanel:not([hidden])) .notes{padding-bottom:calc(136px + env(safe-ar
       <div class="popover" id="sheetMenu" hidden role="menu">
         <button class="pop-i" id="sheetCut" role="menuitem">Taglia foglio</button>
         <button class="pop-i" id="sheetCopy" role="menuitem">Copia foglio</button>
+        <button class="pop-i" id="sheetOrder" role="menuitem">Ordina quaderni e fogli…</button>
         <button class="pop-i danger" id="delSheet" role="menuitem">Elimina foglio</button>
       </div>
     </div>
+    <button class="btn" id="notesExport" aria-label="Esporta in PDF">Export</button>
     <button class="btn primary" id="closeNotes">Chiudi</button>
   </div>
   <div class="newbook" id="newBook" hidden>
@@ -526,7 +589,11 @@ body:has(#inkPanel:not([hidden])) .notes{padding-bottom:calc(136px + env(safe-ar
 </div>
 
 <!-- LAZO: barra della selezione e barra "incolla qui" -->
-<div class="selbar" id="selBar" hidden><span id="selInfo"></span><button class="btn" id="selCopy">Copia</button><button class="btn" id="selCut">Taglia</button><button class="icon-btn" id="selClose" aria-label="Annulla la selezione">×</button></div>
+<div class="selbar" id="selBar" hidden><span id="selInfo"></span><button class="btn" id="selCopy">Copia</button><button class="btn" id="selCut">Taglia</button><button class="btn primary" id="selMove">Sposta</button><button class="icon-btn" id="selClose" aria-label="Annulla la selezione">×</button></div>
+<div class="ghost-sel" id="ghost" hidden>
+  <div id="ghostBody" aria-label="Contenuto da posizionare: trascinalo"><canvas id="ghostInk"></canvas><p class="ghost-txt" id="ghostTxt"></p></div>
+  <div class="ghost-bar"><span class="ghost-hint">Trascina con penna o dito</span><button class="btn primary" id="ghostOk">Fissa qui</button><button class="icon-btn" id="ghostX" aria-label="Annulla">×</button></div>
+</div>
 <div class="pastebar" id="pasteBar" hidden><span id="pasteTxt"></span><button class="btn" id="pasteCancel">Annulla</button></div>
 
 <div class="toast" id="toast" hidden></div>
@@ -1206,6 +1273,361 @@ $('sheetPasteOk').onclick = () => {
   toast(op === 'cut' ? `Foglio spostato in ${dest.name}` : `Foglio copiato in ${dest.name}`);
 };
 
+/* ---------- Ordina quaderni e fogli ---------- */
+function moveItem(arr, i, d){ const j = i + d; if (j < 0 || j >= arr.length) return false; [arr[i], arr[j]] = [arr[j], arr[i]]; return true; }
+function renderOrder(){
+  ensureBooks();
+  const book = curBook();
+  const mk = (label, up, down, isFirst, isLast, current) => {
+    const row = el('div', 'ord-row' + (current ? ' cur' : ''));
+    const t = el('span', null, label);
+    const bu = el('button', 'icon-btn', '↑'); bu.type = 'button'; bu.disabled = isFirst; bu.setAttribute('aria-label', 'Sposta su: ' + label); bu.onclick = up;
+    const bd = el('button', 'icon-btn', '↓'); bd.type = 'button'; bd.disabled = isLast; bd.setAttribute('aria-label', 'Sposta giù: ' + label); bd.onclick = down;
+    row.append(t, bu, bd); return row;
+  };
+  $('ordBooks').replaceChildren(...data.books.map((b, i) => mk(b.name,
+    () => { moveItem(data.books, i, -1); save(); renderOrder(); renderNotes(); },
+    () => { moveItem(data.books, i, 1); save(); renderOrder(); renderNotes(); },
+    i === 0, i === data.books.length - 1, b.id === book.id)));
+  $('ordSheetsLbl').textContent = `Fogli di “${book.name}”`;
+  const list = bookSheets();
+  if (book.meeting){
+    $('ordSheets').replaceChildren();
+    $('ordHint').hidden = false;
+    $('ordHint').textContent = 'I verbali seguono la data della riunione: per spostarne uno cambia la data nell’intestazione del foglio.';
+    return;
+  }
+  $('ordHint').hidden = true;
+  const curId = (data.notes[data.noteIdx] || {}).id;
+  const swapSheets = (p, d) => {                            // scambia due fogli del quaderno, il foglio aperto resta lo stesso
+    const a = list[p], b = list[p + d]; if (b == null) return;
+    [data.notes[a], data.notes[b]] = [data.notes[b], data.notes[a]];
+    data.noteIdx = data.notes.findIndex(n => n.id === curId);
+    save(); renderOrder(); renderNotes();
+  };
+  $('ordSheets').replaceChildren(...list.map((i, p) => mk(`${p + 1}. ${sheetTitle(data.notes[i])}`,
+    () => swapSheets(p, -1), () => swapSheets(p, 1), p === 0, p === list.length - 1, data.notes[i].id === curId)));
+}
+$('sheetOrder').onclick = () => { closeSheetMenu(); renderOrder(); $('ordOverlay').hidden = false; };
+$('ordClose').onclick = () => { $('ordOverlay').hidden = true; };
+
+/* =========================================================
+   EXPORT PDF (generato nell'app, funziona anche offline)
+   Le pagine vengono disegnate dai dati (testo completo e scrittura a penna),
+   quindi entra anche la parte dei fogli lunghi che sullo schermo va scorsa.
+   ========================================================= */
+const PRINT_INK = {'--pen-nero':'#1b1e2b','--pen-rosso':'#c2414b','--pen-blu':'#2f55c9',
+  '--hl-giallo':'#ffd83d','--hl-verde':'#5fd877','--hl-azzurro':'#4fc3ff','--hl-arancione':'#ff9a2e'};
+const PRINT_EV = {'RIUNIONE':'#2f55c9','COLAZIONE':'#b7791f','PRANZO':'#2f8a5b','VTC':'#7b4bbd','LICENZA':'#c2414b','STAFF MEETING':'#0e7c86'};
+const A4 = {pw:595.28, ph:841.89};                         // punti PDF
+const PX_PORTRAIT = [1654, 2339], PX_LAND = [2339, 1654];   // 200 dpi
+const usePrintInk = () => { pal = {getPropertyValue: k => PRINT_INK[k] || '#1b1e2b'}; };
+const restoreInk = () => { pal = getComputedStyle(document.documentElement); };
+const fontOf = (cs, scale = 1) => `${cs.fontStyle} ${cs.fontWeight} ${parseFloat(cs.fontSize) * scale}px ${cs.fontFamily}`;
+
+// posizioni dei caratteri di un testo con lo stile di un campo (relative al campo)
+function boxesFor(ta, text){
+  const cs = getComputedStyle(ta), m = document.createElement('div');
+  for (const k of ['fontFamily','fontSize','fontWeight','fontStyle','letterSpacing','lineHeight','paddingTop','paddingRight','paddingBottom','paddingLeft',
+                   'borderTopWidth','borderRightWidth','borderBottomWidth','borderLeftWidth','borderStyle','boxSizing','textIndent','wordSpacing','tabSize','textTransform']) m.style[k] = cs[k];
+  Object.assign(m.style, {position:'absolute', visibility:'hidden', whiteSpace:'pre-wrap', overflowWrap:'break-word', wordBreak:'normal',
+                          width: ta.offsetWidth + 'px', left:'0', top:'0', borderColor:'transparent'});
+  const spans = [];
+  for (let i = 0; i < text.length; i++){ const sp = document.createElement('span'); sp.textContent = text[i]; m.append(sp); spans.push(sp); }
+  m.append(document.createTextNode('​'));
+  document.body.append(m);
+  const mr = m.getBoundingClientRect();
+  const boxes = spans.map(sp => { const r = sp.getBoundingClientRect(); return {x:r.left - mr.left, y:r.top - mr.top, w:r.width, h:r.height}; });
+  m.remove();
+  return boxes;
+}
+function runsOf(text, boxes, ox, oy){                      // righe di testo da disegnare
+  const runs = []; let cur = null;
+  for (let i = 0; i < text.length; i++){
+    const ch = text[i], b = boxes[i];
+    if (ch === '\n'){ cur = null; continue; }
+    if (!cur || Math.abs(b.y - cur.y0) > 1){ cur = {x:b.x + ox, y:b.y + oy, y0:b.y, h:b.h, str:''}; runs.push(cur); }
+    cur.str += ch;
+  }
+  return runs;
+}
+function wrapText(ctx, text, maxW){
+  const out = [];
+  for (const para of String(text).split('\n')){
+    let line = '';
+    for (const w of para.split(/(\s+)/)){
+      const t = line + w;
+      if (ctx.measureText(t).width > maxW && line.trim()){ out.push(line.trimEnd()); line = w.trimStart(); }
+      else line = t;
+    }
+    out.push(line);
+  }
+  return out;
+}
+function newPage(land){ const [w, h] = land ? PX_LAND : PX_PORTRAIT; const c = document.createElement('canvas'); c.width = w; c.height = h;
+  const ctx = c.getContext('2d'); ctx.fillStyle = '#ffffff'; ctx.fillRect(0, 0, w, h); return {c, ctx, w, h, land}; }
+function footer(P, text){
+  const {ctx, w, h} = P; ctx.save(); ctx.fillStyle = '#666c86'; ctx.font = '22px -apple-system, system-ui, Helvetica, Arial, sans-serif';
+  ctx.textBaseline = 'alphabetic'; ctx.fillText(text, 60, h - 34); ctx.restore();
+}
+
+/* ---------- Fogli delle Note ---------- */
+function sheetLayout(n){
+  const page = document.querySelector('.page'), ta = $('sheetText');
+  const W = page.clientWidth, taX = ta.offsetLeft, taY = ta.offsetTop;
+  const runs = runsOf(n.text, boxesFor(ta, n.text), taX, taY);
+  const ink = data.ink['n:' + n.id] || [];
+  const textBottom = runs.reduce((m, r) => Math.max(m, r.y + r.h), taY) + 40;
+  const inkBottom = ink.reduce((m, s) => Math.max(m, ...s.pts.map(q => q[1] + (s.w || 2))), 0) + 30;
+  const base = page.clientHeight + (n.extra || 0) * 32;
+  const meta = n.book === BOOK_STAFF ? `Staff meeting del ${fmt(fromKey(n.date || keyOf(today)), {day:'2-digit', month:'2-digit', year:'numeric'})}`
+                                     : `${(data.books.find(b => b.id === n.book) || {}).name || 'Note'} · creato il ${new Date(n.created || n.id).toLocaleDateString('it-IT')}`;
+  return {n, W, H:Math.max(textBottom, inkBottom, base), taX, taY, runs, ink, meta, font: fontOf(getComputedStyle(ta)), metaFont: fontOf(getComputedStyle($('pageMeta')))};
+}
+function sheetPages(n, label){
+  const L = sheetLayout(n), pages = [];
+  const M = 60, FOOT = 70, k = (PX_PORTRAIT[0] - 2 * M) / L.W;
+  const avail = (PX_PORTRAIT[1] - M - FOOT) / k;
+  const grid0 = L.taY + 6;
+  let top = 0;
+  while (top < L.H - 1){
+    let cut = grid0 + 32 * Math.floor((top + avail - grid0) / 32);   // taglio sulle righe del foglio
+    if (cut <= top + 64) cut = top + avail;
+    pages.push([top, Math.min(cut, L.H)]); top = cut;
+  }
+  return pages.map(([t, b], i) => {
+    const P = newPage(false), {ctx} = P;
+    ctx.save(); ctx.translate(M, M); ctx.scale(k, k); ctx.beginPath(); ctx.rect(0, 0, L.W, b - t); ctx.clip(); ctx.translate(0, -t);
+    ctx.fillStyle = 'rgba(194,65,75,.35)'; ctx.fillRect(55, t, 1, b - t);                       // margine rosso
+    ctx.fillStyle = '#d8dbe8'; for (let y = grid0 + 31; y < b; y += 32) if (y >= t) ctx.fillRect(0, y, L.W, 1);   // righe
+    if (t === 0){ ctx.fillStyle = '#666c86'; ctx.font = L.metaFont; ctx.textBaseline = 'top'; ctx.fillText(L.meta, 72, 14); }
+    ctx.fillStyle = '#1b1e2b'; ctx.font = L.font; ctx.textBaseline = 'middle';
+    for (const r of L.runs) if (r.y + r.h >= t && r.y <= b) ctx.fillText(r.str, r.x, r.y + r.h / 2);
+    for (const s of L.ink) if (s.t === 'hl') paint(ctx, s, 0);
+    for (const s of L.ink) if (s.t !== 'hl') paint(ctx, s, 0);
+    ctx.restore();
+    ctx.strokeStyle = '#d8dbe8'; ctx.lineWidth = 2; ctx.strokeRect(M, M, L.W * k, (b - t) * k);
+    footer(P, `${label} · pagina ${i + 1} di ${pages.length}`);
+    return P;
+  });
+}
+
+/* ---------- Agenda della settimana ---------- */
+function drawDayBox(ctx, sec, x, y, w, h, s, inkList){
+  const sr = sec.getBoundingClientRect(), host = document.querySelector('.left').getBoundingClientRect();
+  const key = sec.dataset.day, d = fromKey(key);
+  ctx.save(); ctx.translate(x, y);
+  ctx.strokeStyle = '#24318f'; ctx.lineWidth = 2; ctx.strokeRect(0, 0, w, h);
+  ctx.beginPath(); ctx.rect(0, 0, w, h); ctx.clip();
+  ctx.scale(s, s);
+  // giorno
+  ctx.fillStyle = '#24318f'; ctx.textBaseline = 'top'; ctx.font = '500 19px ui-serif, "New York", Georgia, serif';
+  ctx.textAlign = 'center'; ctx.fillText(DOW[(d.getDay() + 6) % 7], 26, 6);
+  ctx.fillStyle = '#666c86'; ctx.font = '12px ui-monospace, Menlo, monospace'; ctx.fillText(String(d.getDate()), 26, 30); ctx.textAlign = 'left';
+  // appunti
+  const memo = sec.querySelector('.memo');
+  if (memo && memo.value){
+    const mrc = memo.getBoundingClientRect();
+    const runs = runsOf(memo.value, boxesFor(memo, memo.value), mrc.left - sr.left, mrc.top - sr.top);
+    ctx.fillStyle = '#1b1e2b'; ctx.font = fontOf(getComputedStyle(memo)); ctx.textBaseline = 'middle';
+    for (const r of runs) ctx.fillText(r.str, r.x, r.y + r.h / 2);
+  }
+  // eventi, per esteso
+  const col = sec.querySelector('.evcol'), cr = col.getBoundingClientRect();
+  const ex = cr.left - sr.left, ew = cr.width;
+  ctx.fillStyle = '#c2414b'; ctx.fillRect(ex, 0, 1.5, h / s);
+  let ey = 6; ctx.textBaseline = 'top';
+  for (const ev of eventsOn(key)){
+    const c = PRINT_EV[ev.type] || '#24318f';
+    ctx.font = '600 11px -apple-system, system-ui, Helvetica, Arial, sans-serif';
+    const head = `${ev.allDay ? 'Giorno' : ev.time}  ${typeName(ev.type)}`;
+    const lines = [head, ...(ev.desc ? (ctx.font = '11px -apple-system, system-ui, Helvetica, Arial, sans-serif', wrapText(ctx, ev.desc, ew - 18)) : [])];
+    ctx.fillStyle = c; ctx.fillRect(ex + 6, ey, 3, lines.length * 14);
+    lines.forEach((l, i) => { ctx.font = (i ? '' : '600 ') + '11px -apple-system, system-ui, Helvetica, Arial, sans-serif'; ctx.fillStyle = i ? '#444a63' : c; ctx.fillText(l, ex + 13, ey + i * 14); });
+    ey += lines.length * 14 + 6;
+  }
+  // penna di quel giorno
+  const secLeft = sr.left - host.left;
+  ctx.translate(-secLeft, 0);
+  for (const st of inkList) if (st.d === key && st.t === 'hl') paint(ctx, st, 0);
+  for (const st of inkList) if (st.d === key && st.t !== 'hl') paint(ctx, st, 0);
+  ctx.restore();
+}
+function dayNeededH(sec){                                 // altezza per far entrare tutto (in px schermo)
+  const memo = sec.querySelector('.memo'), sr = sec.getBoundingClientRect();
+  let h = sec.getBoundingClientRect().height;
+  if (memo && memo.value){ const mr = memo.getBoundingClientRect(); const bx = boxesFor(memo, memo.value); h = Math.max(h, mr.top - sr.top + bx.reduce((m, b) => Math.max(m, b.y + b.h), 0) + 10); }
+  const n = eventsOn(sec.dataset.day).reduce((m, ev) => m + 1 + Math.ceil((ev.desc || '').length / 22), 0);
+  h = Math.max(h, 12 + n * 14 + eventsOn(sec.dataset.day).length * 6);
+  return h;
+}
+function agendaPages(onlyPoints){
+  restoreInk();
+  const days = [...document.querySelectorAll('.day[data-day]')];
+  const wk = keyOf(mondayOf(fromKey(sel))), dayInk = data.ink['w:' + wk] || [];
+  const lb = weekLabel(ptsWeek);
+  const [PW, PH] = PX_LAND, M = 50, HEAD = 80, FOOT = 60;
+  const avail = PH - M - HEAD - FOOT;
+  const leftW = onlyPoints ? 0 : Math.round((PW - 2 * M - 40) * 0.56);
+  const rightX = onlyPoints ? M : M + leftW + 40, rightW = PW - M - rightX;
+  // colonna sinistra: lunedì–venerdì a tutta larghezza, sabato e domenica affiancati
+  const leftRows = [];
+  if (!onlyPoints){
+    days.slice(0, 5).forEach(sec => { const s = leftW / sec.getBoundingClientRect().width; leftRows.push({h: dayNeededH(sec) * s, draw:(ctx, y) => drawDayBox(ctx, sec, M, y, leftW, dayNeededH(sec) * s, s, dayInk)}); });
+    const we = days.slice(5), half = (leftW - 16) / 2;
+    const ss = we.map(sec => half / sec.getBoundingClientRect().width), hh = Math.max(...we.map((sec, i) => dayNeededH(sec) * ss[i]));
+    leftRows.push({h:hh, draw:(ctx, y) => we.forEach((sec, i) => drawDayBox(ctx, sec, M + i * (half + 16), y, half, hh, ss[i], dayInk))});
+  }
+  // colonna destra: punti della settimana
+  const ol = $('points'), orc = ol.getBoundingClientRect(), sp = rightW / ol.clientWidth;
+  const ptInk = data.ink['pw:' + ptsWeek] || [], dd = weekData(ptsWeek);
+  const rightRows = [...ol.querySelectorAll(':scope > .point')].map((li, i) => {
+    const top = li.offsetTop, hgt = li.offsetHeight;
+    const empty = !li.querySelector('textarea').value.trim() && !(dd.done || []).includes(i) && !ptInk.some(st => st.r === i);
+    return {h: hgt * sp, empty, draw:(ctx, y) => {
+      ctx.save(); ctx.translate(rightX, y); ctx.scale(sp, sp); ctx.translate(0, -top);
+      ctx.beginPath(); ctx.rect(0, top, ol.clientWidth, hgt); ctx.clip();
+      const num = li.querySelector('.num'), done = (dd.done || []).includes(i);
+      const nx = num.offsetLeft + num.offsetWidth / 2, ny = num.offsetTop + num.offsetHeight / 2;
+      ctx.beginPath(); ctx.arc(nx, ny, num.offsetWidth / 2 - 1, 0, 7); ctx.lineWidth = 1.5; ctx.strokeStyle = '#24318f';
+      if (done){ ctx.fillStyle = '#24318f'; ctx.fill(); } else ctx.stroke();
+      ctx.fillStyle = done ? '#ffffff' : '#24318f'; ctx.font = '500 13px ui-monospace, Menlo, monospace'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.fillText(String(i + 1), nx, ny); ctx.textAlign = 'left';
+      const ta = li.querySelector('textarea');
+      if (ta.value){
+        const tr = ta.getBoundingClientRect();
+        const runs = runsOf(ta.value, boxesFor(ta, ta.value), tr.left - orc.left + ol.scrollLeft, tr.top - orc.top + ol.scrollTop);
+        ctx.font = fontOf(getComputedStyle(ta)); ctx.fillStyle = done ? '#8a8fa6' : '#1b1e2b';
+        for (const r of runs){ ctx.fillText(r.str, r.x, r.y + r.h / 2); if (done){ ctx.fillRect(r.x, r.y + r.h / 2, ctx.measureText(r.str).width, 1.2); } }
+      }
+      ctx.fillStyle = '#d8dbe8'; ctx.fillRect(0, top + hgt - 1, ol.clientWidth, 1);
+      for (const st of ptInk) if (st.r === i && st.t === 'hl') paint(ctx, st, top);
+      for (const st of ptInk) if (st.r === i && st.t !== 'hl') paint(ctx, st, top);
+      ctx.restore();
+    }};
+  });
+  const paginate = rows => { const pg = [[]]; let used = 0;
+    for (const r of rows){ if (used + r.h > avail && pg[pg.length - 1].length){ pg.push([]); used = 0; } pg[pg.length - 1].push(r); used += r.h + (onlyPoints ? 0 : 0); }
+    return pg; };
+  const lp = paginate(leftRows), rp = paginate(rightRows);
+  while (rp.length > 1 && rp[rp.length - 1].every(r => r.empty)) rp.pop();   // niente pagine di soli punti vuoti
+  const N = Math.max(onlyPoints ? 0 : lp.length, rp.length);
+  usePrintInk();
+  const out = [];
+  for (let p = 0; p < N; p++){
+    const P = newPage(true), {ctx} = P;
+    ctx.fillStyle = '#24318f'; ctx.textBaseline = 'alphabetic';
+    ctx.font = '500 40px ui-serif, "New York", Georgia, serif';
+    const title = onlyPoints ? `Punti · ${lb.title}` : `Agenda · ${lb.title}`;
+    ctx.fillText(title, M, M + 40);
+    const tw = ctx.measureText(title).width;
+    ctx.fillStyle = '#666c86'; ctx.font = '24px -apple-system, system-ui, Helvetica, Arial, sans-serif';
+    ctx.fillText(lb.range + ' ' + fromKey(ptsWeek).getFullYear(), M + tw + 24, M + 40);
+    if (!onlyPoints){ ctx.fillStyle = '#666c86'; ctx.font = '600 20px -apple-system, system-ui, sans-serif'; ctx.fillText('PUNTI', rightX, M + HEAD - 12); }
+    let y = M + HEAD; for (const r of (lp[p] || [])){ if (!onlyPoints){ r.draw(ctx, y); y += r.h; } }
+    y = M + HEAD; for (const r of (rp[p] || [])){ r.draw(ctx, y); y += r.h; }
+    footer(P, `${onlyPoints ? 'Punti' : 'Agenda'} · ${lb.title} · pagina ${p + 1} di ${N}`);
+    out.push(P);
+  }
+  restoreInk();
+  return out;
+}
+
+/* ---------- File PDF (pagine come immagini JPEG) ---------- */
+const jpegOf = c => new Promise(res => c.toBlob(b => b.arrayBuffer().then(a => res(new Uint8Array(a))), 'image/jpeg', 0.9));
+async function makePDF(pages){
+  const enc = new TextEncoder(), parts = [], offs = [];
+  let len = 0;
+  const put = x => { const b = typeof x === 'string' ? enc.encode(x) : x; parts.push(b); len += b.length; };
+  const obj = (id, ...body) => { offs[id] = len; put(`${id} 0 obj\n`); body.forEach(put); put('\nendobj\n'); };
+  put('%PDF-1.4\n%âãÏÓ\n');
+  const n = pages.length, kids = pages.map((_, i) => `${3 + 3 * i} 0 R`).join(' ');
+  obj(1, '<< /Type /Catalog /Pages 2 0 R >>');
+  obj(2, `<< /Type /Pages /Kids [${kids}] /Count ${n} >>`);
+  for (let i = 0; i < n; i++){
+    const P = pages[i], jpg = await jpegOf(P.c);
+    const pw = P.land ? A4.ph : A4.pw, ph = P.land ? A4.pw : A4.ph;
+    const pid = 3 + 3 * i, cid = pid + 1, iid = pid + 2;
+    const stream = `q ${pw.toFixed(2)} 0 0 ${ph.toFixed(2)} 0 0 cm /Im${i} Do Q`;
+    obj(pid, `<< /Type /Page /Parent 2 0 R /MediaBox [0 0 ${pw.toFixed(2)} ${ph.toFixed(2)}] /Resources << /XObject << /Im${i} ${iid} 0 R >> >> /Contents ${cid} 0 R >>`);
+    obj(cid, `<< /Length ${stream.length} >>\nstream\n${stream}\nendstream`);
+    obj(iid, `<< /Type /XObject /Subtype /Image /Width ${P.w} /Height ${P.h} /ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /DCTDecode /Length ${jpg.length} >>\nstream\n`, jpg, '\nendstream');
+  }
+  const xref = len, total = 3 + 3 * n;
+  put(`xref\n0 ${total}\n0000000000 65535 f \n`);
+  for (let i = 1; i < total; i++) put(String(offs[i]).padStart(10, '0') + ' 00000 n \n');
+  put(`trailer\n<< /Size ${total} /Root 1 0 R >>\nstartxref\n${xref}\n%%EOF\n`);
+  return new Blob(parts, {type:'application/pdf'});
+}
+
+/* ---------- Finestra Export con anteprima ---------- */
+let expPages = [], expName = 'agenda.pdf';
+function expOptions(){
+  if (!$('notes').hidden){
+    const book = curBook(), cur = data.notes[data.noteIdx];
+    return [
+      cur && !document.querySelector('.page').hidden ? {id:'sheet', label:`Foglio aperto: “${sheetTitle(cur)}”`} : null,
+      bookSheets().length ? {id:'book', label:`Tutto il quaderno “${book.name}” (${bookSheets().length} ${bookSheets().length === 1 ? 'foglio' : 'fogli'})`} : null
+    ].filter(Boolean);
+  }
+  return [{id:'week', label:'Settimana visualizzata: giorni, eventi e punti'}, {id:'points', label:'Solo i punti della settimana'}];
+}
+const safeName = t => t.replace(/[^\wàèéìòù -]+/gi, '').trim().replace(/\s+/g, '-').slice(0, 40) || 'export';
+async function buildExport(kind){
+  $('expPrev').replaceChildren(el('p', 'bk-text', 'Preparo l’anteprima…'));
+  $('expSave').disabled = true;
+  await new Promise(r => setTimeout(r, 30));
+  usePrintInk();
+  try{
+    const lb = weekLabel(ptsWeek), yr = fromKey(ptsWeek).getFullYear();
+    if (kind === 'week' || kind === 'points'){
+      expPages = agendaPages(kind === 'points');
+      expName = `${kind === 'points' ? 'Punti' : 'Agenda'}-${lb.title.replace(' ', '-')}-${yr}.pdf`;
+    } else if (kind === 'sheet'){
+      const n = data.notes[data.noteIdx], book = curBook();
+      expPages = sheetPages(n, `${book.name} · ${sheetTitle(n)}`);
+      expName = `${safeName(book.name)}-${safeName(sheetTitle(n))}.pdf`;
+    } else {
+      const book = curBook(); expPages = [];
+      bookSheets().forEach((i, k) => { const n = data.notes[i]; expPages.push(...sheetPages(n, `${book.name} · foglio ${k + 1}: ${sheetTitle(n)}`)); });
+      expName = `Quaderno-${safeName(book.name)}.pdf`;
+    }
+  } finally { restoreInk(); }
+  $('expPrev').replaceChildren(...expPages.map((P, i) => {
+    const f = el('figure', 'exp-page' + (P.land ? ' land' : ''));
+    P.c.setAttribute('aria-label', `Pagina ${i + 1}`); f.append(P.c, el('figcaption', null, `Pagina ${i + 1}`)); return f;
+  }));
+  $('expInfo').textContent = `${expPages.length} ${expPages.length === 1 ? 'pagina' : 'pagine'} A4 · ${expName}`;
+  $('expSave').disabled = !expPages.length;
+}
+function openExport(){
+  const opts = expOptions();
+  $('expOpts').replaceChildren(...opts.map((o, i) => {
+    const l = el('label', 'check'); const r = el('input'); r.type = 'radio'; r.name = 'expKind'; r.value = o.id; r.id = 'exp-' + o.id; r.checked = i === 0;
+    r.onchange = () => buildExport(o.id); l.append(r, ' ' + o.label); return l;
+  }));
+  $('expOverlay').hidden = false;
+  if (opts.length) buildExport(opts[0].id);
+}
+$('openExport').onclick = openExport;
+$('notesExport').onclick = openExport;
+$('expCancel').onclick = () => { $('expOverlay').hidden = true; expPages = []; $('expPrev').replaceChildren(); };
+$('expSave').onclick = async () => {
+  const b = $('expSave'); b.disabled = true; b.textContent = 'Creo il PDF…';
+  try{
+    const blob = await makePDF(expPages), file = new File([blob], expName, {type:'application/pdf'});
+    let done = false;
+    try{
+      if (navigator.canShare && navigator.canShare({files:[file]})){ await navigator.share({files:[file], title:expName}); done = true; }
+    }catch(e){ if (e && e.name === 'AbortError'){ b.disabled = false; b.textContent = 'Salva PDF'; return; } }
+    if (!done){
+      const a = document.createElement('a'); a.href = URL.createObjectURL(file); a.download = expName;
+      document.body.append(a); a.click(); setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 4000);
+    }
+    $('expOverlay').hidden = true; toast(done ? 'PDF pronto: scegli “Salva su File” e la cartella' : 'PDF scaricato: lo trovi in File → Download');
+  } finally { b.disabled = false; b.textContent = 'Salva PDF'; }
+};
+
 $('openNotes').onclick = () => { $('notes').hidden = false; renderNotes(); };
 $('closeNotes').onclick = () => { $('notes').hidden = true; $('newBook').hidden = true; closeSheetMenu(); clearSel(); stopPaste(); };
 
@@ -1395,7 +1817,7 @@ document.addEventListener('pointerdown', e => {
   // incolla: il primo tocco (penna o dito) in un'area scrivibile indica il punto
   if (pasteMode && !active && mode === 'ink'){
     const o = inkAt(e.target);
-    if (o){ e.preventDefault(); e.stopPropagation(); doPaste(o, e.clientX, e.clientY); return; }
+    if (o){ e.preventDefault(); e.stopPropagation(); stopPaste(); showGhost(e.clientX, e.clientY, false); return; }
   }
   if (mode !== 'ink' || e.pointerType === 'touch' || active) return;
   if (e.pointerType === 'mouse' && e.button !== 0) return;
@@ -1690,10 +2112,12 @@ function clearSel(){
   if (!lassoSel) return;
   const o = lassoSel.o; lassoSel = null; $('selBar').hidden = true; drawLive(o);
 }
-function takeSel(cut){
+function takeSel(cut, move){
   if (!lassoSel) return;
   const {o, strokes, texts, box} = lassoSel;
+  const r0 = o.c.getBoundingClientRect(), gx = r0.left + box[0], gy = r0.top + box[1];
   clip = {
+    w: box[2] - box[0], h: box[3] - box[1],
     ink: strokes.map(s => { const off = o.offset(s);
       return {t:s.t, c:s.c, w:s.w, pts: s.pts.map(q => [Math.round((q[0] - box[0])*10)/10, Math.round((q[1] + off - box[1])*10)/10, q[2]])}; }),
     text: texts.map(t => t.text).join('\n')
@@ -1713,7 +2137,8 @@ function takeSel(cut){
     pushUndo(action); save(); clearSel(); refreshTexts(); inks.forEach(redraw);
   } else clearSel();
   $('pasteBtn').disabled = false;
-  startPaste(cut ? 'Tagliato' : 'Copiato');
+  if (move) showGhost(gx, gy, true);                        // Sposta: il contenuto si stacca e si trascina
+  else startPaste(cut ? 'Tagliato' : 'Copiato');
 }
 function startPaste(what){
   if (!clip) return;
@@ -1748,13 +2173,68 @@ function doPaste(o, cx, cy){
 }
 $('selCopy').onclick = () => takeSel(false);
 $('selCut').onclick = () => takeSel(true);
+$('selMove').onclick = () => takeSel(true, true);
+/* ---------- Contenuto fluttuante: si trascina con penna o dito, poi "Fissa qui" ---------- */
+let ghost = null;                                           // {moved:boolean, drag:{id,dx,dy}}
+function showGhost(x, y, fromMove){
+  const g = $('ghost'), cv = $('ghostInk'), w = Math.max(40, Math.ceil(clip.w || 0)), h = Math.max(24, Math.ceil(clip.h || 0));
+  const dpr = Math.min(window.devicePixelRatio || 1, 3);
+  cv.width = w * dpr; cv.height = h * dpr; cv.style.width = w + 'px'; cv.style.height = h + 'px';
+  const ctx = cv.getContext('2d'); ctx.setTransform(dpr, 0, 0, dpr, 0, 0); ctx.clearRect(0, 0, w, h);
+  pal = getComputedStyle(document.documentElement);
+  for (const s of clip.ink) if (s.t === 'hl') paint(ctx, s, 0);
+  for (const s of clip.ink) if (s.t !== 'hl') paint(ctx, s, 0);
+  $('ghostTxt').textContent = clip.text || '';
+  $('ghostTxt').hidden = !clip.text;
+  $('ghostBody').style.minWidth = w + 'px'; $('ghostBody').style.minHeight = h + 'px';
+  g.hidden = false;
+  ghost = {fromMove: !!fromMove, drag:null};
+  placeGhost(x, y);
+}
+function placeGhost(x, y){
+  const g = $('ghost');
+  const maxX = innerWidth - 40, maxY = innerHeight - 60;
+  g.style.left = Math.min(Math.max(4, x), maxX) + 'px';
+  g.style.top = Math.min(Math.max(4, y), maxY) + 'px';
+}
+function hideGhost(){ $('ghost').hidden = true; ghost = null; }
+$('ghostBody').addEventListener('pointerdown', e => {
+  if (!ghost) return;
+  e.preventDefault(); e.stopPropagation();
+  const r = $('ghost').getBoundingClientRect();
+  ghost.drag = {id:e.pointerId, dx:e.clientX - r.left, dy:e.clientY - r.top};
+  try{ $('ghostBody').setPointerCapture(e.pointerId); }catch(err){}
+});
+$('ghostBody').addEventListener('pointermove', e => {
+  if (!ghost || !ghost.drag || ghost.drag.id !== e.pointerId) return;
+  e.preventDefault();
+  placeGhost(e.clientX - ghost.drag.dx, e.clientY - ghost.drag.dy);
+});
+const endGhostDrag = e => { if (ghost && ghost.drag && ghost.drag.id === e.pointerId) ghost.drag = null; };
+$('ghostBody').addEventListener('pointerup', endGhostDrag);
+$('ghostBody').addEventListener('pointercancel', endGhostDrag);
+$('ghostOk').onclick = () => {
+  if (!ghost) return;
+  const r = $('ghostBody').getBoundingClientRect(), x = r.left + 1, y = r.top + 1;
+  const g = $('ghost'); g.hidden = true;                    // per trovare cosa c'è sotto
+  const o = inkAt(document.elementFromPoint(x + 4, y + 8)) || inkAt(document.elementFromPoint(r.left + r.width/2, r.top + r.height/2));
+  if (!o){ g.hidden = false; toast('Porta il contenuto su un foglio, sui punti o su un giorno'); return; }
+  ghost = null;
+  doPaste(o, x, y);
+};
+$('ghostX').onclick = () => {
+  const undoMove = ghost && ghost.fromMove;
+  hideGhost();
+  if (undoMove){ undo(); toast('Spostamento annullato'); }
+};
+
 $('selClose').onclick = clearSel;
 $('pasteBtn').onclick = () => startPaste('');
 $('pasteCancel').onclick = stopPaste;
 
 /* ---------- Barra modalità + pannello strumenti ---------- */
 function setMode(m){
-  if (m !== 'ink'){ clearSel(); stopPaste(); }
+  if (m !== 'ink'){ clearSel(); stopPaste(); if (ghost) $('ghostX').click(); }
   mode = m; document.body.dataset.mode = m;
   document.querySelectorAll('.mode').forEach(b => b.setAttribute('aria-pressed', b.dataset.mode === m));
   $('inkPanel').hidden = m !== 'ink';
