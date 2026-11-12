@@ -181,7 +181,7 @@ textarea.inp{resize:none;line-height:1.45;overflow:hidden}
 .err{color:var(--danger);font-size:14px;margin:0}
 
 /* ---------- Blocco note ---------- */
-.notes{position:fixed;inset:0;z-index:40;background:var(--paper);display:grid;grid-template-rows:auto auto 1fr;gap:10px;
+.notes{position:fixed;inset:0;z-index:40;background:var(--paper);display:flex;flex-direction:column;gap:10px;
   padding:calc(12px + env(safe-area-inset-top,0px)) max(16px,env(safe-area-inset-right,0px)) calc(80px + env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px))}
 .notes-bar{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
 .notes-bar h3{margin:0;font-family:var(--f-display);font-size:26px;font-weight:500;flex:none}
@@ -211,7 +211,23 @@ textarea.inp{resize:none;line-height:1.45;overflow:hidden}
 .tabs{display:flex;gap:6px;overflow-x:auto;padding-bottom:2px}
 .tab{flex:none;border:1px solid var(--rule);background:var(--surface);border-radius:10px;padding:8px 14px;font-size:14px;max-width:180px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .tab[aria-current="true"]{border-color:var(--ink);color:var(--ink);font-weight:600}
-.page-wrap{min-height:0;position:relative;display:flex;justify-content:center}
+.page-wrap{flex:1;min-height:0;position:relative;display:flex;justify-content:center}
+/* menu Foglio e barra Incolla qui */
+.menuwrap{position:relative}
+.popover{position:absolute;right:0;top:calc(100% + 6px);z-index:45;min-width:210px;background:var(--surface);border:1px solid var(--rule);border-radius:12px;box-shadow:var(--shadow);padding:6px;display:flex;flex-direction:column}
+.pop-i{border:0;background:none;text-align:left;padding:12px;border-radius:8px;font-size:15px;color:var(--text)}
+.pop-i:hover{background:var(--sel)}
+.pop-i.danger{color:var(--danger)}
+.pop-i.armed{background:var(--danger);color:var(--surface)}
+.sheetpaste{display:flex;align-items:center;gap:10px;flex-wrap:wrap;border:1.5px dashed var(--ink);border-radius:12px;padding:8px 8px 8px 14px;background:var(--ink-soft)}
+.sheetpaste span{flex:1;min-width:200px;line-height:1.4}
+/* lazo */
+.selbar,.pastebar{position:fixed;z-index:60;display:flex;align-items:center;gap:8px;background:var(--surface);border:1px solid var(--ink);border-radius:14px;padding:6px 6px 6px 14px;box-shadow:var(--shadow)}
+.selbar span{font-size:13px;color:var(--muted);white-space:nowrap}
+.selbar .btn,.pastebar .btn{height:38px;padding:0 14px}
+.pastebar{left:50%;transform:translateX(-50%);top:calc(12px + env(safe-area-inset-top,0px));max-width:calc(100% - 32px);background:var(--ink);color:var(--surface);border-color:var(--ink)}
+.pastebar span{font-size:14px;line-height:1.35}
+body.pasting .left,body.pasting .points,body.pasting .page{cursor:copy}
 .page{width:min(860px,100%);height:100%;position:relative;overflow-y:auto;-webkit-overflow-scrolling:touch;border-radius:6px;box-shadow:var(--shadow);
   background:linear-gradient(to right,transparent 55px,var(--margin) 55px,var(--margin) 56px,transparent 56px) var(--surface);background-attachment:local}
 .page-meta{font-family:var(--f-mono);font-size:12px;color:var(--muted);padding:14px 28px 0 72px;font-variant-numeric:tabular-nums}
@@ -393,7 +409,7 @@ body:has(#inkPanel:not([hidden])) .notes{padding-bottom:calc(136px + env(safe-ar
       </div>
     </div>
     <p class="err" id="bkErr" hidden></p>
-    <div class="actions"><span class="ver" style="margin-right:auto;align-self:center">Agenda 1.12</span><button class="btn" id="appUpdate">Aggiorna app</button><button class="btn" id="menuClose">Chiudi</button></div>
+    <div class="actions"><span class="ver" style="margin-right:auto;align-self:center">Agenda 1.13</span><button class="btn" id="appUpdate">Aggiorna app</button><button class="btn" id="menuClose">Chiudi</button></div>
   </div>
 </div>
 
@@ -420,13 +436,25 @@ body:has(#inkPanel:not([hidden])) .notes{padding-bottom:calc(136px + env(safe-ar
     <button class="btn" id="sendActions" hidden>Azioni → punti</button>
     <button class="icon-btn" id="prevSheet" aria-label="Foglio precedente">‹</button>
     <button class="icon-btn" id="nextSheet" aria-label="Foglio successivo">›</button>
-    <button class="btn danger" id="delSheet" style="margin-right:0">Elimina foglio</button>
+    <div class="menuwrap">
+      <button class="btn" id="sheetMenuBtn" aria-haspopup="true" aria-expanded="false">Foglio ▾</button>
+      <div class="popover" id="sheetMenu" hidden role="menu">
+        <button class="pop-i" id="sheetCut" role="menuitem">Taglia foglio</button>
+        <button class="pop-i" id="sheetCopy" role="menuitem">Copia foglio</button>
+        <button class="pop-i danger" id="delSheet" role="menuitem">Elimina foglio</button>
+      </div>
+    </div>
     <button class="btn primary" id="closeNotes">Chiudi</button>
   </div>
   <div class="newbook" id="newBook" hidden>
     <input class="inp" id="newBookName" type="text" maxlength="24" placeholder="Nome del nuovo quaderno" aria-label="Nome del nuovo quaderno">
     <button class="btn primary" id="newBookOk" type="button">Crea quaderno</button>
     <button class="btn" id="newBookCancel" type="button">Annulla</button>
+  </div>
+  <div class="sheetpaste" id="sheetPaste" hidden>
+    <span id="sheetPasteTxt"></span>
+    <button class="btn primary" id="sheetPasteOk" type="button">Incolla qui</button>
+    <button class="btn" id="sheetPasteCancel" type="button">Annulla</button>
   </div>
   <nav class="tabs" id="tabs" aria-label="Fogli"></nav>
   <div class="page-wrap">
@@ -447,7 +475,7 @@ body:has(#inkPanel:not([hidden])) .notes{padding-bottom:calc(136px + env(safe-ar
     </div>
     <button class="fab" id="addSheet" aria-label="Aggiungi foglio">+</button>
   </div>
-  <span id="mDateWrap"><input type="date" id="mDate" aria-label="Data della riunione"></span>
+  <span id="mDateWrap" hidden><input type="date" id="mDate" aria-label="Data della riunione"></span>
 </div>
 
 <!-- BARRA IN BASSO: modalità di scrittura -->
@@ -477,6 +505,10 @@ body:has(#inkPanel:not([hidden])) .notes{padding-bottom:calc(136px + env(safe-ar
     <div class="grp">
       <button class="tool tl" data-tool="eraser" aria-label="Gomma (tocca di nuovo per cambiare tipo)">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M4 16 14 6l5 5-9 9H6z"/><path d="M9 11l5 5"/><path d="M10 20h10"/></svg><span id="eraserLbl">Gomma</span></button>
+      <button class="tool tl" data-tool="lasso" aria-label="Lazo: circonda un'area per selezionarla">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-dasharray="3 3" aria-hidden="true"><ellipse cx="12" cy="10" rx="8" ry="6"/><path d="M8 15c-1 2-1 4 1 5" stroke-dasharray="none"/></svg>Lazo</button>
+      <button class="tool ico" id="pasteBtn" aria-label="Incolla" disabled>
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="8" y="2" width="8" height="4" rx="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/></svg></button>
       <button class="tool ico" id="undoBtn" aria-label="Annulla" disabled>
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 14 4 9l5-5"/><path d="M4 9h10a6 6 0 0 1 0 12h-3"/></svg></button>
       <button class="tool ico" id="redoBtn" aria-label="Ripristina" disabled>
@@ -492,6 +524,10 @@ body:has(#inkPanel:not([hidden])) .notes{padding-bottom:calc(136px + env(safe-ar
     <button class="mode" data-mode="ink"><i class="dot" id="modeDot"></i>Solo penna</button>
   </div>
 </div>
+
+<!-- LAZO: barra della selezione e barra "incolla qui" -->
+<div class="selbar" id="selBar" hidden><span id="selInfo"></span><button class="btn" id="selCopy">Copia</button><button class="btn" id="selCut">Taglia</button><button class="icon-btn" id="selClose" aria-label="Annulla la selezione">×</button></div>
+<div class="pastebar" id="pasteBar" hidden><span id="pasteTxt"></span><button class="btn" id="pasteCancel">Annulla</button></div>
 
 <div class="toast" id="toast" hidden></div>
 
@@ -648,6 +684,7 @@ function dayRow(d, i){
   evcol.setAttribute('aria-label', `Eventi di ${fmt(d,{weekday:'long',day:'numeric'})}: ${evs.length || 'nessuno'}`);
   // Appunti liberi del giorno: textarea nativa = Scribble attivo
   const memo = el('textarea','memo');
+  memo.dataset.ref = 'memo:' + k;
   memo.rows = 1; memo.value = dayData(k).memo; memo.readOnly = mode === 'ink';
   memo.placeholder = 'Appunti…';
   memo.setAttribute('aria-label','Appunti di ' + fmt(d,{weekday:'long',day:'numeric'}));
@@ -746,6 +783,7 @@ function pointRow(dd, i){
     li.classList.toggle('done'); save();
   };
   const ta = el('textarea');
+  ta.dataset.ref = 'pt:' + ptsWeek + ':' + i;
   ta.rows = 1; ta.value = dd.list[i];
   const ex = (dd.extra||{})[i] || 0;                  // spazio extra aggiunto con "Invio"
   if(ex) ta.style.minHeight = (32 + ex*POINT_LINE) + 'px';
@@ -961,6 +999,7 @@ function renderNotes(){
     a.onclick = () => { $('newBook').hidden = false; $('newBookName').value = ''; $('newBookName').focus(); }; return a; })());
 
   $('notes').classList.toggle('is-meeting', !!book.meeting);
+  renderSheetPaste();
   $('tabs').hidden = !!book.meeting;
   $('mIndex').hidden = !book.meeting;
   $('sendActions').hidden = !(book.meeting && has);
@@ -970,7 +1009,8 @@ function renderNotes(){
   const pos = list.indexOf(data.noteIdx);
   $('prevSheet').disabled = pos <= 0;
   $('nextSheet').disabled = pos < 0 || pos === list.length - 1;
-  $('delSheet').disabled = !has;
+  $('delSheet').disabled = $('sheetCut').disabled = $('sheetCopy').disabled = !has;
+  $('sheetMenuBtn').disabled = !has;
   $('delSheet').classList.remove('armed');
   $('delSheet').textContent = book.meeting ? 'Elimina verbale' : 'Elimina foglio';
   if (book.meeting) renderIndex(list); else renderTabs(list);
@@ -978,7 +1018,7 @@ function renderNotes(){
 
   const cur = data.notes[data.noteIdx];
   if (book.meeting){
-    $('pageMeta').replaceChildren('Staff meeting del ', mDateWrapEl);
+    $('pageMeta').replaceChildren('Staff meeting del ', mDateWrapEl); mDateWrapEl.hidden = false;
     mDateEl.value = cur.date || keyOf(today);
   } else {
     $('pageMeta').replaceChildren(`${book.name} · foglio ${pos + 1} di ${list.length} · creato il ${new Date(cur.created || cur.id).toLocaleDateString('it-IT')}`);
@@ -1042,7 +1082,8 @@ $('prevSheet').onclick = () => { const l = bookSheets(), p = l.indexOf(data.note
 $('nextSheet').onclick = () => { const l = bookSheets(), p = l.indexOf(data.noteIdx); if (p >= 0 && p < l.length - 1){ data.noteIdx = l[p + 1]; save(); renderNotes(); } };
 $('delSheet').onclick = () => {
   const b = $('delSheet'), cur = data.notes[data.noteIdx]; if (!cur) return;
-  if (!b.classList.contains('armed')){ b.classList.add('armed'); b.textContent = 'Conferma'; return; }
+  if (!b.classList.contains('armed')){ b.classList.add('armed'); b.textContent = 'Tocca di nuovo per eliminare'; return; }
+  closeSheetMenu(); if (sheetClip && sheetClip.id === cur.id) sheetClip = null;
   delete data.ink['n:' + cur.id];
   data.notes.splice(data.noteIdx, 1); data.noteIdx = -1; data.bookPos[data.book] = null;
   save(); renderNotes(); toast(curBook().meeting ? 'Verbale eliminato' : 'Foglio eliminato');
@@ -1118,8 +1159,55 @@ function openMinutes(ev){
 }
 $('evMinutes').onclick = () => { const ev = editing; if (!ev) return; closeEvent(); openMinutes(ev); };
 
+/* ---------- Taglia / Copia e Incolla dei fogli tra quaderni ---------- */
+let sheetClip = null;                                       // {id, op:'cut'|'copy'}
+function sheetTitle(n){ const f = firstLine(n.text); return f ? (f.length > 40 ? f.slice(0, 40) + '…' : f) : 'Foglio vuoto'; }
+function renderSheetPaste(){
+  const n = sheetClip && data.notes.find(x => x.id === sheetClip.id);
+  if (!n){ sheetClip = null; $('sheetPaste').hidden = true; return; }
+  const from = (data.books.find(b => b.id === n.book) || {}).name || '';
+  const same = n.book === data.book;
+  $('sheetPasteTxt').textContent = sheetClip.op === 'cut'
+    ? (same ? `“${sheetTitle(n)}” è tagliato: apri il quaderno dove spostarlo e tocca Incolla qui.` : `Sposta qui “${sheetTitle(n)}” (tagliato da ${from}).`)
+    : `Incolla qui una copia di “${sheetTitle(n)}” (da ${from}).`;
+  $('sheetPasteOk').hidden = sheetClip.op === 'cut' && same;
+  $('sheetPaste').hidden = false;
+}
+const closeSheetMenu = () => { $('sheetMenu').hidden = true; $('sheetMenuBtn').setAttribute('aria-expanded', 'false'); };
+$('sheetMenuBtn').onclick = e => {
+  e.stopPropagation();
+  const open = $('sheetMenu').hidden;
+  $('delSheet').classList.remove('armed'); $('delSheet').textContent = curBook().meeting ? 'Elimina verbale' : 'Elimina foglio';
+  $('sheetMenu').hidden = !open; $('sheetMenuBtn').setAttribute('aria-expanded', String(open));
+};
+document.addEventListener('pointerdown', e => { if (!$('sheetMenu').hidden && !e.target.closest('.menuwrap')) closeSheetMenu(); });
+function clipSheet(op){
+  const n = data.notes[data.noteIdx]; if (!n) return;
+  sheetClip = {id:n.id, op}; closeSheetMenu(); renderSheetPaste();
+  toast(op === 'cut' ? 'Foglio tagliato: apri il quaderno di destinazione e tocca Incolla qui' : 'Foglio copiato: apri il quaderno di destinazione e tocca Incolla qui');
+}
+$('sheetCut').onclick = () => clipSheet('cut');
+$('sheetCopy').onclick = () => clipSheet('copy');
+$('sheetPasteCancel').onclick = () => { sheetClip = null; renderSheetPaste(); };
+$('sheetPasteOk').onclick = () => {
+  const n = data.notes.find(x => x.id === (sheetClip || {}).id); if (!n){ renderSheetPaste(); return; }
+  const dest = curBook(); let target;
+  if (sheetClip.op === 'cut'){
+    n.book = dest.id; target = n;
+  } else {
+    target = {...JSON.parse(JSON.stringify(n)), id:Date.now(), created:Date.now(), book:dest.id, eventId:undefined, sent:[]};
+    if (data.ink['n:' + n.id]) data.ink['n:' + target.id] = JSON.parse(JSON.stringify(data.ink['n:' + n.id]));  // copia anche la penna
+    data.notes.push(target);
+  }
+  if (dest.meeting && !target.date) target.date = keyOf(today);           // nei verbali serve una data
+  data.noteIdx = data.notes.indexOf(target); data.bookPos[dest.id] = target.id;
+  const op = sheetClip.op; sheetClip = null;
+  writeNow(); renderNotes();
+  toast(op === 'cut' ? `Foglio spostato in ${dest.name}` : `Foglio copiato in ${dest.name}`);
+};
+
 $('openNotes').onclick = () => { $('notes').hidden = false; renderNotes(); };
-$('closeNotes').onclick = () => { $('notes').hidden = true; $('newBook').hidden = true; };
+$('closeNotes').onclick = () => { $('notes').hidden = true; $('newBook').hidden = true; closeSheetMenu(); clearSel(); stopPaste(); };
 
 document.addEventListener('keydown', e => {
   if(e.key!=='Escape') return;
@@ -1261,9 +1349,23 @@ const draw = redraw;
 function drawLive(o){
   const {lctx, live} = o;
   lctx.setTransform(1,0,0,1,0,0); lctx.clearRect(0,0,live.width,live.height);
-  if (!active || active.o !== o || !o.w) return;
+  if (!o.w) return;
   lctx.setTransform(o.dpr,0,0,o.dpr,0,0);
   pal = pal || getComputedStyle(document.documentElement);
+  const inkCol = pal.getPropertyValue('--ink').trim();
+  if (typeof lassoSel !== 'undefined' && lassoSel && lassoSel.o === o){   // area selezionata
+    const b = lassoSel.box, pad = 6;
+    lctx.save(); lctx.setLineDash([6, 4]); lctx.lineWidth = 1.5; lctx.strokeStyle = inkCol;
+    lctx.globalAlpha = .08; lctx.fillStyle = inkCol; lctx.fillRect(b[0]-pad, b[1]-pad, b[2]-b[0]+2*pad, b[3]-b[1]+2*pad);
+    lctx.globalAlpha = 1; lctx.strokeRect(b[0]-pad, b[1]-pad, b[2]-b[0]+2*pad, b[3]-b[1]+2*pad); lctx.restore();
+  }
+  if (!active || active.o !== o) return;
+  if (active.lasso){                                    // linea tratteggiata del lazo
+    const p = active.lasso;
+    lctx.save(); lctx.setLineDash([5, 5]); lctx.lineWidth = 1.5; lctx.strokeStyle = inkCol;
+    lctx.beginPath(); lctx.moveTo(p[0][0], p[0][1]); for (const q of p) lctx.lineTo(q[0], q[1]); lctx.stroke(); lctx.restore();
+    return;
+  }
   if (active.cur){
     const s = active.pred && active.pred.length ? {...active.cur, pts: active.cur.pts.concat(active.pred)} : active.cur;
     paint(lctx, s, 0);
@@ -1290,6 +1392,11 @@ function toPt(e, prev){
   return [Math.round((e.clientX - r.left)*10)/10, Math.round((e.clientY - r.top)*10)/10, Math.round(pr*100)/100];
 }
 document.addEventListener('pointerdown', e => {
+  // incolla: il primo tocco (penna o dito) in un'area scrivibile indica il punto
+  if (pasteMode && !active && mode === 'ink'){
+    const o = inkAt(e.target);
+    if (o){ e.preventDefault(); e.stopPropagation(); doPaste(o, e.clientX, e.clientY); return; }
+  }
   if (mode !== 'ink' || e.pointerType === 'touch' || active) return;
   if (e.pointerType === 'mouse' && e.button !== 0) return;
   const o = inkAt(e.target); if (!o) return;
@@ -1301,6 +1408,8 @@ document.addEventListener('pointerdown', e => {
   if (tool === 'eraser'){
     active.erasing = true; active.before = o.list().slice(); eraseAt(o, toPt(e)); return;
   }
+  if (tool === 'lasso'){ clearSel(); active.lasso = [toPt(e)]; drawLive(o); return; }
+  clearSel();
   active.cur = {t: drawTool, c: drawTool === 'hl' ? hlColor : penColor,
                 w: drawTool === 'hl' ? HL_W[level.hl] : PEN_W[level.pen], pts:[toPt(e)]};
   drawLive(o);
@@ -1311,6 +1420,7 @@ window.addEventListener('pointermove', e => {
   const evs = (e.getCoalescedEvents && e.getCoalescedEvents()) || [];
   const list = evs.length ? evs : [e];
   if (active.erasing){ for (const ev of list) eraseAt(active.o, toPt(ev)); active.o.scheduleLive(); return; }
+  if (active.lasso){ for (const ev of list) active.lasso.push(toPt(ev)); active.o.scheduleLive(); return; }
   const pts = active.cur.pts;
   for (const ev of list){
     const prev = pts[pts.length-1], q = toPt(ev, prev);
@@ -1341,6 +1451,9 @@ function endStroke(e){
     active = null;
     if (s.t === 'hl') redraw(o); else { pal = getComputedStyle(document.documentElement); o.ctx.setTransform(o.dpr,0,0,o.dpr,0,0); paintIn(o, o.ctx, s); }
     markTarget();
+  } else if (active.lasso){
+    const poly = active.lasso; active = null; penBusy = false; drawLive(o);
+    finishLasso(o, poly); return;
   } else if (active.erasing){
     const after = o.list();
     if (after !== active.before && after.length + active.before.length && JSON.stringify(after) !== JSON.stringify(active.before))
@@ -1396,6 +1509,8 @@ function updUndo(){ $('undoBtn').disabled = !undoStack.length; $('redoBtn').disa
 function applyAction(a, dir){
   for (const ch of (a.ink || [])) data.ink[ch.key] = (dir === 'after' ? ch.after : ch.before).slice();
   if (a.space) adjustSpace(a.space, dir === 'after' ? a.space.d : -a.space.d);
+  for (const t of (a.text || [])) setRef(t.ref, dir === 'after' ? t.after : t.before);
+  if (a.text && a.text.length) refreshTexts();
   save(); inks.forEach(redraw); updUndo();
 }
 function undo(){ const a = undoStack.pop(); if (!a) return; applyAction(a, 'before'); redoStack.push(a); updUndo(); }
@@ -1453,8 +1568,193 @@ const notesInk  = makeInk(document.querySelector('.page'), () => 'n:' + (data.no
 leftInk.host.append(leftInk.c, leftInk.live);
 notesInk.host.append(notesInk.c, notesInk.live);
 
+/* =========================================================
+   LAZO: selezione di un'area (scrittura a penna + testo digitato),
+   Copia / Taglia e Incolla nel punto toccato con la penna o con il dito.
+   ========================================================= */
+let lassoSel = null, clip = null, pasteMode = false;
+function pip(x, y, poly){                                  // punto dentro il poligono del lazo
+  let c = false;
+  for (let i = 0, j = poly.length - 1; i < poly.length; j = i++){
+    const [xi, yi] = poly[i], [xj, yj] = poly[j];
+    if (((yi > y) !== (yj > y)) && (x < (xj - xi) * (y - yi) / (yj - yi) + xi)) c = !c;
+  }
+  return c;
+}
+// Posizione di ogni carattere di un campo di testo (copia invisibile con lo stesso stile)
+function charBoxes(ta){
+  const cs = getComputedStyle(ta), m = document.createElement('div');
+  for (const k of ['fontFamily','fontSize','fontWeight','fontStyle','letterSpacing','lineHeight','paddingTop','paddingRight','paddingBottom','paddingLeft',
+                   'borderTopWidth','borderRightWidth','borderBottomWidth','borderLeftWidth','borderStyle','boxSizing','textIndent','wordSpacing','tabSize','textTransform']) m.style[k] = cs[k];
+  Object.assign(m.style, {position:'absolute', visibility:'hidden', whiteSpace:'pre-wrap', overflowWrap:'break-word', wordBreak:'normal',
+                          width: ta.offsetWidth + 'px', left:'0', top:'0', borderColor:'transparent'});
+  const v = ta.value, spans = [];
+  for (let i = 0; i < v.length; i++){ const sp = document.createElement('span'); sp.textContent = v[i]; m.append(sp); spans.push(sp); }
+  m.append(document.createTextNode('​'));
+  document.body.append(m);
+  const mr = m.getBoundingClientRect(), tr = ta.getBoundingClientRect();
+  const boxes = spans.map(sp => { const r = sp.getBoundingClientRect();
+    return {x: tr.left + r.left - mr.left - ta.scrollLeft, y: tr.top + r.top - mr.top - ta.scrollTop, w: r.width, h: r.height}; });
+  m.remove();
+  return boxes;
+}
+function nearestIndex(ta, cx, cy){                          // posizione nel testo più vicina al punto toccato
+  const v = ta.value; if (!v.length) return 0;
+  const boxes = charBoxes(ta);
+  let bestDy = Infinity;
+  boxes.forEach(b => { bestDy = Math.min(bestDy, Math.abs(cy - (b.y + b.h/2))); });
+  let best = -1, bestDx = Infinity;
+  boxes.forEach((b, i) => {
+    if (Math.abs(Math.abs(cy - (b.y + b.h/2)) - bestDy) > 1) return;
+    const dx = Math.abs(cx - (b.x + b.w/2)); if (dx < bestDx){ bestDx = dx; best = i; }
+  });
+  const last = boxes[boxes.length - 1];
+  if (cy > last.y + last.h) return v.length;               // sotto l'ultima riga: in fondo
+  const b = boxes[best];
+  if (v[best] === '\n') return best;                        // fine riga
+  return cx > b.x + b.w/2 ? best + 1 : best;
+}
+// Riferimento ai dati di ogni campo di testo
+function refOf(ta){
+  if (ta.dataset.ref) return ta.dataset.ref;
+  if (ta.id === 'sheetText' && data.notes[data.noteIdx]) return 'note:' + data.notes[data.noteIdx].id;
+  return null;
+}
+function getRef(ref){
+  const [k, a, b] = ref.split(':');
+  if (k === 'memo') return dayData(a).memo || '';
+  if (k === 'pt') return weekData(a).list[+b] || '';
+  if (k === 'note') return (data.notes.find(n => String(n.id) === a) || {}).text || '';
+  return '';
+}
+function setRef(ref, v){
+  const [k, a, b] = ref.split(':');
+  if (k === 'memo') dayData(a).memo = v;
+  else if (k === 'pt'){ const dd = weekData(a); while (dd.list.length <= +b) dd.list.push(''); dd.list[+b] = v; }
+  else if (k === 'note'){ const n = data.notes.find(x => String(x.id) === a); if (n) n.text = v; }
+}
+function refreshTexts(){
+  renderAll();
+  if (!$('notes').hidden){ const pg = document.querySelector('.page'), sc = pg.scrollTop; renderNotes(); pg.scrollTop = sc; }
+}
+function textareaAt(o, cx, cy){
+  const hit = document.elementsFromPoint(cx, cy).find(x => x.tagName === 'TEXTAREA' && o.host.contains(x));
+  if (hit) return hit;
+  const r = o.c.getBoundingClientRect(), y = cy - r.top, x = cx - r.left;
+  if (o === pointsInk){ o.readTops(); return $('points').children[o.rowAt(y)]?.querySelector('textarea') || null; }
+  if (o === leftInk){ o.readTops(); const d = o.dayAt(x, y); return d ? document.querySelector(`.day[data-day="${d}"] .memo`) : null; }
+  if (o === notesInk) return $('sheetText');
+  return null;
+}
+function anchorStroke(o, s){                                // aggancia un tratto incollato a punto o giorno
+  if (o.rows){ s.r = o.rowAt(s.pts[0][1]); const top = o.tops[s.r] || 0; s.pts = s.pts.map(q => [q[0], Math.round((q[1]-top)*10)/10, q[2]]); }
+  else if (o.days){ const d = o.dayAt(s.pts[0][0], s.pts[0][1]); if (d){ const top = o.dtops[d].top; s.d = d; s.pts = s.pts.map(q => [q[0], Math.round((q[1]-top)*10)/10, q[2]]); } }
+  return s;
+}
+
+function finishLasso(o, poly){
+  if (poly.length < 4){ return; }
+  o.readTops();
+  const inside = (x, y) => pip(x, y, poly);
+  const strokes = o.list().filter(s => { const off = o.offset(s); const n = s.pts.filter(q => inside(q[0], q[1] + off)).length; return n > 0 && n >= s.pts.length * 0.5; });
+  const rect = o.c.getBoundingClientRect(), texts = [];
+  for (const ta of o.host.querySelectorAll('textarea')){
+    if (!ta.value || !ta.offsetParent) continue;
+    const ref = refOf(ta); if (!ref) continue;
+    const boxes = charBoxes(ta), v = ta.value, idx = [];
+    boxes.forEach((b, i) => { if (v[i] !== '\n' && b.w > 0 && inside(b.x - rect.left + b.w/2, b.y - rect.top + b.h/2)) idx.push(i); });
+    if (!idx.length) continue;
+    const ranges = []; let st = idx[0], pv = idx[0];
+    for (const i of idx.slice(1)){
+      if (i === pv + 1 || /^[\s]*$/.test(v.slice(pv + 1, i))){ pv = i; continue; }   // salta spazi e a capo in mezzo
+      ranges.push([st, pv + 1]); st = pv = i;
+    }
+    ranges.push([st, pv + 1]);
+    texts.push({ref, ranges, text: ranges.map(([a, b]) => v.slice(a, b)).join('\n'), boxes: idx.map(i => boxes[i])});
+  }
+  if (!strokes.length && !texts.length){ toast('Nell’area non c’è scrittura da selezionare'); return; }
+  const box = [1e9, 1e9, -1e9, -1e9], ext = (x, y) => { box[0] = Math.min(box[0], x); box[1] = Math.min(box[1], y); box[2] = Math.max(box[2], x); box[3] = Math.max(box[3], y); };
+  strokes.forEach(s => { const off = o.offset(s), h = (s.w || 2) / 2; s.pts.forEach(q => { ext(q[0] - h, q[1] + off - h); ext(q[0] + h, q[1] + off + h); }); });
+  texts.forEach(t => t.boxes.forEach(b => { ext(b.x - rect.left, b.y - rect.top); ext(b.x - rect.left + b.w, b.y - rect.top + b.h); }));
+  lassoSel = {o, strokes, texts, box};
+  drawLive(o);
+  const nc = texts.reduce((n, t) => n + t.text.replace(/\n/g, '').length, 0);
+  $('selInfo').textContent = [strokes.length ? `${strokes.length} ${strokes.length === 1 ? 'tratto' : 'tratti'}` : '', nc ? `${nc} caratteri` : ''].filter(Boolean).join(' · ');
+  const bar = $('selBar'); bar.hidden = false;
+  const bw = bar.offsetWidth, bh = bar.offsetHeight;
+  let top = rect.top + box[1] - bh - 10; if (top < 60) top = rect.top + box[3] + 10;
+  const left = Math.min(Math.max(12, rect.left + (box[0] + box[2]) / 2 - bw / 2), innerWidth - bw - 12);
+  bar.style.top = Math.min(top, innerHeight - bh - 90) + 'px'; bar.style.left = left + 'px';
+}
+function clearSel(){
+  if (!lassoSel) return;
+  const o = lassoSel.o; lassoSel = null; $('selBar').hidden = true; drawLive(o);
+}
+function takeSel(cut){
+  if (!lassoSel) return;
+  const {o, strokes, texts, box} = lassoSel;
+  clip = {
+    ink: strokes.map(s => { const off = o.offset(s);
+      return {t:s.t, c:s.c, w:s.w, pts: s.pts.map(q => [Math.round((q[0] - box[0])*10)/10, Math.round((q[1] + off - box[1])*10)/10, q[2]])}; }),
+    text: texts.map(t => t.text).join('\n')
+  };
+  if (cut){
+    const action = {ink:[], text:[]};
+    if (strokes.length){
+      const key = o.getKey(), before = o.list().slice(), set = new Set(strokes);
+      data.ink[key] = before.filter(s => !set.has(s));
+      action.ink.push({key, before, after: data.ink[key].slice()});
+    }
+    for (const t of texts){
+      const before = getRef(t.ref); let v = before;
+      for (const [a, b] of t.ranges.slice().reverse()) v = v.slice(0, a) + v.slice(b);
+      setRef(t.ref, v); action.text.push({ref:t.ref, before, after:v});
+    }
+    pushUndo(action); save(); clearSel(); refreshTexts(); inks.forEach(redraw);
+  } else clearSel();
+  $('pasteBtn').disabled = false;
+  startPaste(cut ? 'Tagliato' : 'Copiato');
+}
+function startPaste(what){
+  if (!clip) return;
+  pasteMode = true; document.body.classList.add('pasting');
+  $('pasteTxt').textContent = `${what ? what + '. ' : ''}Tocca con la penna o col dito il punto dove incollare`;
+  $('pasteBar').hidden = false;
+}
+function stopPaste(){ pasteMode = false; document.body.classList.remove('pasting'); $('pasteBar').hidden = true; }
+function doPaste(o, cx, cy){
+  stopPaste();
+  const rect = o.c.getBoundingClientRect(), px = cx - rect.left, py = cy - rect.top;
+  o.readTops();
+  const action = {ink:[], text:[]};
+  if (clip.text){
+    const ta = textareaAt(o, cx, cy), ref = ta && refOf(ta);
+    if (ref){
+      const i = nearestIndex(ta, cx, cy), before = getRef(ref), after = before.slice(0, i) + clip.text + before.slice(i);
+      setRef(ref, after); action.text.push({ref, before, after});
+    }
+  }
+  if (clip.ink.length){
+    const key = o.getKey(), before = o.list().slice();
+    const add = clip.ink.map(s => anchorStroke(o, {t:s.t, c:s.c, w:s.w, pts: s.pts.map(q => [Math.round((q[0] + px)*10)/10, Math.round((q[1] + py)*10)/10, q[2]])}));
+    data.ink[key] = before.concat(add);
+    action.ink.push({key, before, after: data.ink[key].slice()});
+  }
+  if (!action.ink.length && !action.text.length){ toast('Qui non si può incollare'); return; }
+  pushUndo(action); save();
+  if (action.text.length) refreshTexts();
+  inks.forEach(x => x.size());
+  toast('Incollato');
+}
+$('selCopy').onclick = () => takeSel(false);
+$('selCut').onclick = () => takeSel(true);
+$('selClose').onclick = clearSel;
+$('pasteBtn').onclick = () => startPaste('');
+$('pasteCancel').onclick = stopPaste;
+
 /* ---------- Barra modalità + pannello strumenti ---------- */
 function setMode(m){
+  if (m !== 'ink'){ clearSel(); stopPaste(); }
   mode = m; document.body.dataset.mode = m;
   document.querySelectorAll('.mode').forEach(b => b.setAttribute('aria-pressed', b.dataset.mode === m));
   $('inkPanel').hidden = m !== 'ink';
@@ -1464,20 +1764,21 @@ function setMode(m){
 }
 function updatePanel(){
   document.querySelectorAll('.tl').forEach(b => b.setAttribute('aria-pressed',
-    b.dataset.tool === tool && (tool === 'eraser' || b.dataset.color === (tool === 'hl' ? hlColor : penColor))));
+    b.dataset.tool === tool && (tool === 'eraser' || tool === 'lasso' || b.dataset.color === (tool === 'hl' ? hlColor : penColor))));
   const dc = `var(--${drawTool === 'hl' ? 'hl' : 'pen'}-${drawTool === 'hl' ? hlColor : penColor})`;
   document.querySelectorAll('.wt').forEach(b => {
-    b.setAttribute('aria-pressed', tool !== 'eraser' && +b.dataset.lv === level[drawTool]);
+    b.setAttribute('aria-pressed', tool !== 'eraser' && tool !== 'lasso' && +b.dataset.lv === level[drawTool]);
     b.style.setProperty('--dc', dc);
   });
   $('eraserLbl').textContent = tool === 'eraser' ? `Gomma · ${eraserKind}` : 'Gomma';
-  $('modeDot').style.background = tool === 'eraser' ? 'var(--muted)' : dc;
+  $('modeDot').style.background = tool === 'eraser' || tool === 'lasso' ? 'var(--muted)' : dc;
   $('inkClear').classList.remove('armed'); $('inkClear').textContent = 'Pulisci';
 }
 function setTool(t, c){
   if (t === 'eraser' && tool === 'eraser') eraserKind = eraserKind === 'precisa' ? 'tratto' : 'precisa';
+  if (t !== 'lasso') clearSel();
   tool = t;
-  if (t !== 'eraser') drawTool = t;
+  if (t !== 'eraser' && t !== 'lasso') drawTool = t;
   if (t === 'pen' && c) penColor = c;
   if (t === 'hl' && c) hlColor = c;
   updatePanel();
