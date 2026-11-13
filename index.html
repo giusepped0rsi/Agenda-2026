@@ -173,6 +173,29 @@ textarea,input{font:inherit;font-size:16px;color:var(--text)}
 .right-head .date small{font-family:var(--f-body);font-size:13px;color:var(--muted);font-weight:400;margin-left:6px}
 .right-head .icon-btn{width:32px;height:32px;font-size:16px;flex:none}
 .right-head .ghost{height:32px;font-size:13px;flex:none}
+.right-head .carry{height:32px;flex:none;padding:0 12px;border-radius:9px;border:1.5px solid var(--ink);background:var(--surface);color:var(--ink);font-size:11.5px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;white-space:nowrap}
+.right-head .carry:active{background:var(--ink);color:var(--surface)}
+/* 1.17 — pagina sfogliata al cambio settimana */
+.sheet{position:relative}
+.flip-stage{position:fixed;z-index:30;pointer-events:none;perspective:2400px}
+.flip-page{position:absolute;inset:0;transform-style:preserve-3d;will-change:transform}
+.flip-face,.flip-back{position:absolute;inset:0;backface-visibility:hidden;-webkit-backface-visibility:hidden;border-radius:inherit;overflow:hidden}
+.flip-face > .sheet{position:absolute;inset:0;margin:0;width:100%;height:100%;animation:none!important}
+.flip-face *{animation:none!important;transition:none!important}
+.flip-back{transform:rotateY(180deg);background:linear-gradient(90deg,var(--surface),color-mix(in srgb,var(--paper) 70%,var(--surface)))}
+.flip-face::after,.flip-back::after{content:'';position:absolute;inset:0;pointer-events:none;opacity:0;animation:flipshade var(--fd,.7s) ease-in both}
+.flip-n .flip-face::after{background:linear-gradient(270deg,rgba(0,0,0,.28),rgba(0,0,0,0) 45%)}
+.flip-p .flip-face::after{background:linear-gradient(90deg,rgba(0,0,0,.28),rgba(0,0,0,0) 45%)}
+.flip-back::after{background:rgba(0,0,0,.12)}
+@keyframes flipshade{0%{opacity:0}50%{opacity:1}100%{opacity:.4}}
+.flip-n .flip-page{transform-origin:left center;animation:flipn var(--fd,.7s) cubic-bezier(.45,.05,.3,1) both}
+.flip-p .flip-page{transform-origin:right center;animation:flipp var(--fd,.7s) cubic-bezier(.45,.05,.3,1) both}
+@keyframes flipn{0%{transform:rotateY(0)}35%{transform:rotateY(-40deg) skewY(-1.2deg)}100%{transform:rotateY(-180deg)}}
+@keyframes flipp{0%{transform:rotateY(0)}35%{transform:rotateY(40deg) skewY(1.2deg)}100%{transform:rotateY(180deg)}}
+.flip-cast{position:absolute;inset:0;border-radius:inherit;pointer-events:none;animation:flipcast var(--fd,.7s) ease-out both}
+.flip-n .flip-cast{background:linear-gradient(90deg,rgba(15,18,40,.22),rgba(15,18,40,0) 60%)}
+.flip-p .flip-cast{background:linear-gradient(270deg,rgba(15,18,40,.22),rgba(15,18,40,0) 60%)}
+@keyframes flipcast{0%{opacity:.9}100%{opacity:0}}
 .points{flex:1;min-height:0;overflow-y:auto;list-style:none;margin:0;padding:4px 16px 16px;-webkit-overflow-scrolling:touch}
 .point{display:grid;grid-template-columns:36px minmax(0,1fr);gap:10px;align-items:start;border-bottom:1px solid var(--rule);padding:6px 0}
 .num{width:30px;height:30px;border-radius:50%;border:1.5px solid var(--ink);background:none;color:var(--ink);font-family:var(--f-mono);font-size:13px;font-variant-numeric:tabular-nums;display:grid;place-items:center;margin-top:1px}
@@ -454,6 +477,7 @@ body:has(#inkPanel:not([hidden])) .notes{padding-bottom:calc(136px + env(safe-ar
         <button class="icon-btn" id="ptsPrev" aria-label="Settimana precedente dei punti">‹</button>
         <button class="ghost" id="ptsNow" hidden>Questa settimana</button>
         <button class="icon-btn" id="ptsNext" aria-label="Settimana successiva dei punti">›</button>
+        <button class="carry" id="ptsCarry" type="button" title="Riporta qui i punti non fatti della settimana precedente">Copia precedente</button>
       </div>
       <ol class="points" id="points"></ol>
     </section>
@@ -518,7 +542,7 @@ body:has(#inkPanel:not([hidden])) .notes{padding-bottom:calc(136px + env(safe-ar
       </div>
     </div>
     <p class="err" id="bkErr" hidden></p>
-    <div class="actions"><span class="ver" style="margin-right:auto;align-self:center">Agenda 1.16</span><button class="btn" id="appUpdate">Aggiorna app</button><button class="btn" id="menuClose">Chiudi</button></div>
+    <div class="actions"><span class="ver" style="margin-right:auto;align-self:center">Agenda 1.17</span><button class="btn" id="appUpdate">Aggiorna app</button><button class="btn" id="menuClose">Chiudi</button></div>
   </div>
 </div>
 
@@ -939,6 +963,82 @@ function showPointsWeek(k){
 $('ptsPrev').onclick = () => showPointsWeek(keyOf(addDays(fromKey(ptsWeek), -7)));
 $('ptsNext').onclick = () => showPointsWeek(keyOf(addDays(fromKey(ptsWeek), 7)));
 $('ptsNow').onclick  = () => showPointsWeek(curWeek());
+/* ===== 1.17 — testo adattato alla riga (azioni dello staff meeting) ===== */
+function fitPoint(ta, dd, i){
+  if (!(dd.fit || {})[i]){ if (ta.style.fontSize) ta.style.fontSize = ''; grow(ta); return; }
+  const limit = 32 + ((dd.extra || {})[i] || 0) * POINT_LINE;
+  ta.style.fontSize = '';
+  const base = parseFloat(getComputedStyle(ta).fontSize) || 16;
+  for (let fs = base; fs >= 8; fs -= .5){
+    ta.style.fontSize = fs + 'px'; ta.style.height = 'auto';
+    if (ta.scrollHeight <= limit + .5) break;
+  }
+  grow(ta);
+}
+/* ===== 1.17 — COPIA PRECEDENTE: i punti non fatti della settimana prima ===== */
+function carryPrev(){
+  const wk = ptsWeek, prev = keyOf(addDays(fromKey(wk), -7));
+  const pd = (data.weeks || {})[prev], pInk = data.ink['pw:' + prev] || [];
+  const inked = new Set(pInk.filter(st => st.r != null).map(st => st.r));
+  const pst = pd ? ptStatusMap(prev) : {};
+  const src = pd ? pd.list.map((t, i) => i).filter(i => ((pd.list[i] || '').trim() || inked.has(i)) && pst[i] !== 'done') : [];
+  if (!src.length){ toast('Nessun punto da riportare: nella settimana precedente sono vuoti o già FATTI'); return; }
+  const {dd, isFree} = freeRows(wk);
+  dd.carried ||= [];
+  const todo = src.filter(i => !dd.carried.includes(prev + ':' + i));
+  if (!todo.length){ toast('I punti della settimana precedente sono già stati riportati'); return; }
+  const st = ptStatusMap(wk), add = [], rows = [];
+  let j = 0;
+  for (const i of todo){                                  // in ordine, uno sotto l'altro, dalla prima riga libera
+    while (j < dd.list.length && !isFree(j)) j++;
+    if (j >= dd.list.length) dd.list.push('');
+    dd.list[j] = pd.list[i] || '';
+    if ((pd.extra || {})[i]) (dd.extra ||= {})[j] = pd.extra[i];
+    if ((pd.fit || {})[i]) (dd.fit ||= {})[j] = 1;
+    if (pst[i] === 'prio') st[j] = 'prio';
+    for (const s0 of pInk) if (s0.r === i) add.push({t:s0.t, c:s0.c, w:s0.w, r:j, pts:s0.pts.map(q => q.slice())});
+    dd.carried.push(prev + ':' + i); rows.push(j + 1); j++;
+  }
+  if (add.length) data.ink['pw:' + wk] = (data.ink['pw:' + wk] || []).concat(add);
+  writeNow(); renderPoints();
+  requestAnimationFrame(() => rows.forEach(r => $('points').querySelectorAll(':scope > .point')[r - 1]?.animate?.([{background:'color-mix(in srgb, var(--ink) 14%, transparent)'}, {background:'transparent'}], {duration:900, easing:'ease-out'})));
+  toast(rows.length === 1 ? `Riportato 1 punto (riga ${rows[0]})` : `Riportati ${rows.length} punti (righe ${rows[0]}–${rows[rows.length - 1]})`);
+}
+$('ptsCarry').onclick = carryPrev;
+
+/* ===== 1.17 — effetto pagina sfogliata ===== */
+let flipEnd = null;
+function pageFlip(dir, update){
+  const sheet = document.querySelector('main.sheet');
+  if (!sheet || matchMedia('(prefers-reduced-motion: reduce)').matches){ update(); return false; }
+  if (flipEnd) flipEnd();
+  const r = sheet.getBoundingClientRect();
+  const snap = sheet.cloneNode(true);
+  // valori dei campi e inchiostro non vengono copiati da cloneNode: li ricopio
+  const srcT = sheet.querySelectorAll('textarea'), dstT = snap.querySelectorAll('textarea');
+  srcT.forEach((t, k) => { dstT[k].value = t.value; dstT[k].style.cssText = t.style.cssText; });
+  const srcC = sheet.querySelectorAll('canvas'), dstC = snap.querySelectorAll('canvas');
+  srcC.forEach((c, k) => { try{ dstC[k].getContext('2d').drawImage(c, 0, 0); }catch(_){} });
+  const scr = [...sheet.querySelectorAll('*')].filter(x => x.scrollTop).map(x => [x, x.scrollTop]);
+  snap.querySelectorAll('[id]').forEach(x => x.removeAttribute('id')); snap.removeAttribute('id');
+  snap.setAttribute('aria-hidden', 'true'); snap.inert = true;
+  update();                                                // la nuova settimana compare sotto il foglio che si gira
+  const stage = el('div', 'flip-stage ' + (dir > 0 ? 'flip-n' : 'flip-p'));
+  const cs = getComputedStyle(sheet);
+  Object.assign(stage.style, {left:r.left + 'px', top:r.top + 'px', width:r.width + 'px', height:r.height + 'px', borderRadius:cs.borderRadius});
+  const page = el('div', 'flip-page'), face = el('div', 'flip-face'), back = el('div', 'flip-back');
+  page.style.borderRadius = face.style.borderRadius = back.style.borderRadius = cs.borderRadius;
+  face.append(snap); page.append(face, back); stage.append(el('div', 'flip-cast'), page);
+  document.body.append(stage);
+  // riporto gli scorrimenti (es. lista dei punti) nella copia
+  const all = [...sheet.querySelectorAll('*')], allS = [...snap.querySelectorAll('*')];
+  for (const [x, v] of scr){ const k = all.indexOf(x); if (k >= 0 && allS[k]) allS[k].scrollTop = v; }
+  const done = () => { stage.remove(); flipEnd = null; clearTimeout(tm); };
+  const tm = setTimeout(done, 900);
+  flipEnd = done;
+  page.addEventListener('animationend', e => { if (e.target === page) done(); });
+  return true;
+}
 function renderPoints(){
   const lb = weekLabel(ptsWeek), pd = $('pointsDate');
   pd.replaceChildren(lb.title, el('small', null, lb.range + (ptsWeek === curWeek() ? ' · in corso' : '')));
@@ -951,7 +1051,7 @@ function renderPoints(){
   add.onclick = () => { dd.list.push(''); save(); const r = pointRow(dd, dd.list.length-1); ol.insertBefore(r, add); pointsInk.size(); r.querySelector('textarea').focus(); };
   ol.append(add);
   ol.append(pointsInk.c, pointsInk.live);               // livello inchiostro dentro la lista: scorre col testo
-  requestAnimationFrame(()=>{ ol.querySelectorAll('textarea').forEach(grow); pointsInk.size(); markTarget(); });
+  requestAnimationFrame(()=>{ ol.querySelectorAll(':scope > .point textarea').forEach((t, k) => fitPoint(t, dd, k)); pointsInk.size(); markTarget(); });
 }
 /* ===== 1.16 — Stato dei punti (Fatto / Priorità) e copie nei giorni ===== */
 function ptStatusMap(wk){
@@ -1102,7 +1202,7 @@ function pointRow(dd, i){
   });
   ta.setAttribute('aria-label', `Punto ${i+1}`);
   // Invio = nuova riga nello stesso punto; l'area cresce e spinge giù i successivi
-  ta.oninput = () => { dd.list[i] = ta.value; grow(ta); pointsInk.size(); save(); };
+  ta.oninput = () => { dd.list[i] = ta.value; fitPoint(ta, dd, i); pointsInk.size(); save(); };
   li.append(n, ta);
   applyStatus(li, ptsWeek, i);
   return li;
@@ -1113,12 +1213,13 @@ function selectDay(k){
   const d = fromKey(k);
   // collegamento a due vie: il foglio dei punti segue sempre la settimana mostrata a sinistra
   const w = keyOf(mondayOf(d)), dir = w > ptsWeek ? 'swap-n' : 'swap-p', changed = w !== ptsWeek;
-  if (changed){ ptsWeek = w; $('points').scrollTop = 0; }
-  calMonth = new Date(d.getFullYear(), d.getMonth(), 1);
-  renderAll();
-  if (changed) for (const x of [document.querySelector('.weekdays'), document.querySelector('.weekend'), $('points')]){   // effetto di scorrimento
-    x.classList.remove('swap-n', 'swap-p'); void x.offsetWidth; x.classList.add(dir);
-  }
+  const apply = () => {
+    if (changed){ ptsWeek = w; $('points').scrollTop = 0; }
+    calMonth = new Date(d.getFullYear(), d.getMonth(), 1);
+    renderAll();
+  };
+  if (changed && pageFlip(dir === 'swap-n' ? 1 : -1, apply)) return;   // pagina dell'agenda che si sfoglia
+  apply();
 }
 function renderAll(){ renderHeader(); renderWeek(); renderCal(); renderPoints(); }
 
@@ -1520,15 +1621,19 @@ function addToPoints(items){
   // misure di una riga della lista dei punti (uguali per tutte le righe)
   const anyTa = $('points').querySelector('.point textarea'), anyLi = anyTa && anyTa.closest('.point');
   const x0 = anyTa ? anyTa.offsetLeft + 2 : 64, yIn = anyTa ? anyTa.offsetTop - anyLi.offsetTop : 6;
+  const availW = anyTa ? Math.max(60, anyTa.clientWidth - 8) : 400, rowH = anyLi ? anyLi.offsetHeight : 44;
   let i = 0;
   for (const it of items){
     while (i < dd.list.length && !isFree(i)) i++;
     if (i >= dd.list.length) dd.list.push('');                // lista piena: si aggiunge una riga in fondo
-    if (typeof it === 'string') dd.list[i] = it;
-    else {                                                  // azione a penna: i tratti vanno sulla riga del punto
-      const gx = Math.min(...it.strokes.flatMap(st => st.pts.map(q => q[0])));
-      const add = it.strokes.map(st => ({t:st.t, c:st.c, w:st.w, r:i,
-        pts: st.pts.map(q => [Math.round((x0 + q[0] - gx) * 10) / 10, Math.round((yIn + q[1] - it.top) * 10) / 10, q[2]])}));
+    if (typeof it === 'string'){ dd.list[i] = it; (dd.fit ||= {})[i] = 1; }   // il testo si rimpicciolisce per stare nella riga
+    else {                                                  // azione a penna: i tratti vanno sulla riga del punto, ridotti se serve
+      const xs = it.strokes.flatMap(st => st.pts.map(q => q[0])), ys = it.strokes.flatMap(st => st.pts.map(q => q[1]));
+      const gx = Math.min(...xs), gy = Math.min(...ys), bw = Math.max(1, Math.max(...xs) - gx), bh = Math.max(1, Math.max(...ys) - gy);
+      const k = Math.min(1, availW / bw, (rowH - 6) / bh);
+      const oy = k < 1 || gy - it.top + yIn < 2 || gy - it.top + yIn + bh > rowH - 2 ? (rowH - bh * k) / 2 : yIn + gy - it.top;
+      const add = it.strokes.map(st => ({t:st.t, c:st.c, w:k < 1 ? Math.max(.6, Math.round((st.w || PEN_W[1]) * Math.max(k, .55) * 100) / 100) : st.w, r:i,
+        pts: st.pts.map(q => [Math.round((x0 + (q[0] - gx) * k) * 10) / 10, Math.round((oy + (q[1] - gy) * k) * 10) / 10, q[2]])}));
       data.ink['pw:' + wk] = (data.ink['pw:' + wk] || []).concat(add);
     }
     rows.push(i + 1); i++;
