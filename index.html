@@ -176,8 +176,27 @@ textarea,input{font:inherit;font-size:16px;color:var(--text)}
 .points{flex:1;min-height:0;overflow-y:auto;list-style:none;margin:0;padding:4px 16px 16px;-webkit-overflow-scrolling:touch}
 .point{display:grid;grid-template-columns:36px minmax(0,1fr);gap:10px;align-items:start;border-bottom:1px solid var(--rule);padding:6px 0}
 .num{width:30px;height:30px;border-radius:50%;border:1.5px solid var(--ink);background:none;color:var(--ink);font-family:var(--f-mono);font-size:13px;font-variant-numeric:tabular-nums;display:grid;place-items:center;margin-top:1px}
-.point.done .num{background:var(--ink);color:var(--surface)}
+.point.done .num:not(.st-done){background:var(--ink);color:var(--surface)}
 .point.done textarea{text-decoration:line-through;color:var(--muted)}
+/* 1.16 — numeri interattivi: Fatto (verde + visto), Priorità (giallo + riga gialla), copie nei giorni */
+.num,.mark{touch-action:none;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none;position:relative;cursor:grab;transition:background-color .18s,border-color .18s,color .18s,transform .12s}
+.num:active,.mark:active{transform:scale(.94)}
+.num.st-done,.mark.st-done{background:#2e9e5b;border-color:#2e9e5b;color:#fff}
+.num.st-prio,.mark.st-prio{background:#ffd83d;border-color:#c99a00;color:#1b1e2b}
+.num.st-done::after,.mark.st-done::after{content:'✓';position:absolute;right:-7px;top:-7px;width:17px;height:17px;border-radius:50%;background:#2e9e5b;color:#fff;border:2px solid var(--surface);font:700 11px/13px var(--f-body);text-align:center;box-shadow:0 1px 3px rgba(0,0,0,.25)}
+.point.prio{background:color-mix(in srgb, #ffd83d 34%, transparent);border-radius:6px}
+.point.prio .num:not(.st-prio){background:var(--surface)}
+.day{position:relative}
+.mark{position:absolute;z-index:7;width:28px;height:28px;margin:-14px 0 0 -14px;border-radius:50%;border:1.5px solid var(--ink);background:var(--surface);color:var(--ink);font-family:var(--f-mono);font-size:12px;font-variant-numeric:tabular-nums;display:grid;place-items:center;padding:0;box-shadow:0 2px 6px rgba(20,26,70,.22)}
+.mark.flying{position:fixed;z-index:90;pointer-events:none;box-shadow:0 8px 22px rgba(20,26,70,.35);transform:scale(1.12)}
+.day.drop-ok{outline:2px dashed var(--ink);outline-offset:-3px}
+#numMenu{position:fixed;z-index:85;min-width:220px;background:var(--surface);border:1px solid var(--rule);border-radius:12px;box-shadow:var(--shadow);padding:6px;display:flex;flex-direction:column}
+#numMenu[hidden]{display:none}
+#numMenu .nm-h{font-size:12px;color:var(--muted);padding:6px 12px 4px}
+#numMenu .pop-i{display:flex;align-items:center;gap:10px}
+#numMenu .dot{width:16px;height:16px;border-radius:50%;border:1.5px solid var(--ink);flex:none}
+#numMenu .pop-i.on{font-weight:600;background:var(--sel)}
+#numMenu hr{border:0;border-top:1px solid var(--rule);margin:4px 6px}
 .point textarea{width:100%;border:0;background:transparent;resize:none;line-height:1.5;padding:4px 0;min-height:32px;overflow:hidden;display:block}
 .add-point{margin-top:10px;border:1px dashed var(--rule);background:none;border-radius:10px;padding:10px;width:100%;color:var(--muted)}
 
@@ -499,7 +518,7 @@ body:has(#inkPanel:not([hidden])) .notes{padding-bottom:calc(136px + env(safe-ar
       </div>
     </div>
     <p class="err" id="bkErr" hidden></p>
-    <div class="actions"><span class="ver" style="margin-right:auto;align-self:center">Agenda 1.15</span><button class="btn" id="appUpdate">Aggiorna app</button><button class="btn" id="menuClose">Chiudi</button></div>
+    <div class="actions"><span class="ver" style="margin-right:auto;align-self:center">Agenda 1.16</span><button class="btn" id="appUpdate">Aggiorna app</button><button class="btn" id="menuClose">Chiudi</button></div>
   </div>
 </div>
 
@@ -851,6 +870,7 @@ function dayRow(d, i){
   memo.oninput = () => { dayData(k).memo = memo.value; grow(memo); save(); };
   body.append(memo);
   sec.append(lab, body, evcol);
+  for (const m of (data.marks || [])) if (m.day === k) sec.append(markEl(m));
   requestAnimationFrame(()=>grow(memo));
   return sec;
 }
@@ -933,16 +953,144 @@ function renderPoints(){
   ol.append(pointsInk.c, pointsInk.live);               // livello inchiostro dentro la lista: scorre col testo
   requestAnimationFrame(()=>{ ol.querySelectorAll('textarea').forEach(grow); pointsInk.size(); markTarget(); });
 }
+/* ===== 1.16 — Stato dei punti (Fatto / Priorità) e copie nei giorni ===== */
+function ptStatusMap(wk){
+  const dd = weekData(wk);
+  if (!dd.status){ dd.status = {}; for (const i of dd.done || []) dd.status[i] = 'done'; }
+  return dd.status;
+}
+const ptStatus = (wk, i) => ptStatusMap(wk)[i] || '';
+function applyStatus(node, wk, i){
+  const st = ptStatus(wk, i);
+  if (node.classList.contains('point')){
+    node.classList.toggle('done', st === 'done'); node.classList.toggle('prio', st === 'prio');
+    node = node.querySelector('.num'); if (!node) return;
+  }
+  node.classList.toggle('st-done', st === 'done'); node.classList.toggle('st-prio', st === 'prio');
+}
+function setPtStatus(wk, i, st){
+  const map = ptStatusMap(wk), dd = weekData(wk);
+  if (st) map[i] = st; else delete map[i];
+  dd.done = Object.keys(map).filter(k => map[k] === 'done').map(Number);   // compatibilità (export, backup)
+  save();
+  // l'originale e tutte le sue copie si uniformano
+  document.querySelectorAll(`[data-pt="${wk}:${i}"]`).forEach(nd => applyStatus(nd, wk, i));
+}
+const marksOf = (wk, i) => (data.marks || []).filter(m => m.wk === wk && m.row === i);
+function markEl(m){
+  const b = el('button', 'mark', m.row + 1);
+  b.type = 'button'; b.dataset.pt = m.wk + ':' + m.row; b.dataset.mid = m.id;
+  b.style.left = (m.fx * 100) + '%'; b.style.top = (m.fy * 100) + '%';
+  b.setAttribute('aria-label', `Copia del punto ${m.row + 1}: tocca per il menu, trascina per spostarla`);
+  applyStatus(b, m.wk, m.row);
+  b.addEventListener('pointerdown', e => numDown(e, b, {wk:m.wk, row:m.row, mark:m}));
+  b.addEventListener('click', e => { e.preventDefault(); e.stopPropagation(); });
+  return b;
+}
+function dayUnder(x, y){
+  const t = document.elementFromPoint(x, y);
+  return t && t.closest ? t.closest('.left .day[data-day]') : null;
+}
+function placeMark(sec, x, y, wk, row, m){
+  const r = sec.getBoundingClientRect();
+  const fx = Math.min(.97, Math.max(.03, (x - r.left) / r.width)), fy = Math.min(.9, Math.max(.1, (y - r.top) / r.height));
+  data.marks ||= [];
+  if (m){ m.day = sec.dataset.day; m.fx = fx; m.fy = fy; document.querySelector(`.mark[data-mid="${m.id}"]`)?.remove(); }
+  else { m = {id:'m' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6), wk, row, day:sec.dataset.day, fx, fy}; data.marks.push(m); }
+  const b = markEl(m); sec.append(b);
+  b.animate?.([{transform:'scale(1.35)'}, {transform:'scale(1)'}], {duration:220, easing:'ease-out'});
+  save(); return m;
+}
+let numDrag = null;
+function numDown(e, node, ref){
+  if (e.pointerType === 'mouse' && e.button !== 0) return;
+  e.preventDefault(); e.stopPropagation();
+  if (document.activeElement && document.activeElement !== document.body) document.activeElement.blur();
+  try{ node.setPointerCapture(e.pointerId); }catch(_){}
+  numDrag = {node, ref, id:e.pointerId, x0:e.clientX, y0:e.clientY, fly:null, over:null};
+}
+document.addEventListener('pointermove', e => {
+  const d = numDrag; if (!d || e.pointerId !== d.id) return;
+  if (!d.fly){
+    if (Math.hypot(e.clientX - d.x0, e.clientY - d.y0) < 8) return;
+    closeNumMenu();
+    d.fly = el('div', 'mark flying', d.ref.row + 1); applyStatus(d.fly, d.ref.wk, d.ref.row);
+    document.body.append(d.fly);
+    if (d.ref.mark) d.node.style.opacity = '.25';
+  }
+  e.preventDefault();
+  d.fly.style.left = e.clientX + 'px'; d.fly.style.top = e.clientY + 'px';
+  const sec = dayUnder(e.clientX, e.clientY);
+  if (sec !== d.over){ d.over?.classList.remove('drop-ok'); sec?.classList.add('drop-ok'); d.over = sec; }
+}, {passive:false});
+function numUp(e){
+  const d = numDrag; if (!d || e.pointerId !== d.id) return;
+  numDrag = null;
+  d.over?.classList.remove('drop-ok');
+  if (!d.fly){ if (e.type === 'pointerup') openNumMenu(d.node, d.ref); return; }
+  d.fly.remove(); d.node.style.opacity = '';
+  const sec = e.type === 'pointerup' ? dayUnder(e.clientX, e.clientY) : null;
+  if (sec) placeMark(sec, e.clientX, e.clientY, d.ref.wk, d.ref.row, d.ref.mark);
+  else if (!d.ref.mark) toast('Lascia la copia su un giorno, a sinistra');
+}
+document.addEventListener('pointerup', numUp);
+document.addEventListener('pointercancel', numUp);
+
+const numMenu = el('div'); numMenu.id = 'numMenu'; numMenu.hidden = true; numMenu.setAttribute('role', 'menu');
+document.body.append(numMenu);
+function closeNumMenu(){ numMenu.hidden = true; }
+function openNumMenu(node, ref){
+  const {wk, row, mark} = ref, st = ptStatus(wk, row);
+  const item = (txt, fn, cls, dot) => {
+    const b = el('button', 'pop-i' + (cls ? ' ' + cls : '')); b.type = 'button'; b.setAttribute('role', 'menuitem');
+    if (dot){ const s = el('span', 'dot'); s.style.background = dot; s.style.borderColor = dot === 'transparent' ? '' : dot; b.append(s); }
+    b.append(txt); b.onclick = () => { closeNumMenu(); fn(); }; return b;
+  };
+  const kids = [el('div', 'nm-h', mark ? `Copia del punto ${row + 1}` : `Punto ${row + 1}`)];
+  kids.push(item(st === 'done' ? 'Fatto ✓' : 'Fatto', () => setPtStatus(wk, row, st === 'done' ? '' : 'done'), st === 'done' ? 'on' : '', '#2e9e5b'));
+  kids.push(item(st === 'prio' ? 'Priorità ✓' : 'Priorità', () => setPtStatus(wk, row, st === 'prio' ? '' : 'prio'), st === 'prio' ? 'on' : '', '#ffd83d'));
+  if (st) kids.push(item('Togli stato', () => setPtStatus(wk, row, ''), '', 'transparent'));
+  kids.push(el('hr'));
+  if (mark){
+    kids.push(item('Elimina questa copia', () => {
+      data.marks = (data.marks || []).filter(m => m.id !== mark.id); node.remove(); save(); toast('Copia eliminata');
+    }, 'danger'));
+  } else {
+    kids.push(item('Copia nell’agenda', () => {
+      const sec = document.querySelector(`.left .day[data-day="${sel}"]`) || document.querySelector('.left .day[data-day]');
+      if (!sec) return;
+      const r = sec.getBoundingClientRect(), n = (data.marks || []).filter(m => m.day === sec.dataset.day).length;
+      placeMark(sec, r.left + r.width * Math.min(.9, .55 + n * .06), r.top + r.height / 2, wk, row);
+      toast('Copia aggiunta: trascinala dove vuoi');
+    }));
+    const cp = marksOf(wk, row);
+    if (cp.length) kids.push(item(cp.length === 1 ? 'Elimina la copia nell’agenda' : `Elimina le ${cp.length} copie nell’agenda`, () => {
+      const ids = new Set(cp.map(m => m.id));
+      data.marks = data.marks.filter(m => !ids.has(m.id));
+      ids.forEach(id => document.querySelector(`.mark[data-mid="${id}"]`)?.remove()); save();
+    }, 'danger'));
+  }
+  numMenu.replaceChildren(...kids); numMenu.hidden = false;
+  const r = node.getBoundingClientRect(), mw = numMenu.offsetWidth, mh = numMenu.offsetHeight;
+  let x = r.right + 8, y = r.top - 6;
+  if (x + mw > innerWidth - 8) x = r.left - mw - 8;
+  if (x < 8) x = 8;
+  if (y + mh > innerHeight - 8) y = innerHeight - mh - 8;
+  numMenu.style.left = x + 'px'; numMenu.style.top = Math.max(8, y) + 'px';
+  numMenu.querySelector('.pop-i')?.focus({preventScroll:true});
+}
+document.addEventListener('pointerdown', e => { if (!numMenu.hidden && !e.target.closest('#numMenu')) closeNumMenu(); }, true);
+document.addEventListener('keydown', e => { if (e.key === 'Escape') closeNumMenu(); });
+
 function pointRow(dd, i){
   const li = el('li','point');
-  if(dd.done.includes(i)) li.classList.add('done');
   const n = el('button','num', i+1);
-  n.setAttribute('aria-label', `Punto ${i+1}: segna come fatto`);
-  n.onclick = () => {
-    const at = dd.done.indexOf(i);
-    at>=0 ? dd.done.splice(at,1) : dd.done.push(i);
-    li.classList.toggle('done'); save();
-  };
+  n.type = 'button';
+  n.dataset.pt = ptsWeek + ':' + i;
+  n.setAttribute('aria-label', `Punto ${i+1}: tocca per il menu, trascina per copiarlo in un giorno`);
+  n.addEventListener('pointerdown', e => numDown(e, n, {wk:ptsWeek, row:i}));
+  n.addEventListener('click', e => e.preventDefault());
+  li.dataset.pt = ptsWeek + ':' + i;
   const ta = el('textarea');
   ta.dataset.ref = 'pt:' + ptsWeek + ':' + i;
   ta.rows = 1; ta.value = dd.list[i];
@@ -956,6 +1104,7 @@ function pointRow(dd, i){
   // Invio = nuova riga nello stesso punto; l'area cresce e spinge giù i successivi
   ta.oninput = () => { dd.list[i] = ta.value; grow(ta); pointsInk.size(); save(); };
   li.append(n, ta);
+  applyStatus(li, ptsWeek, i);
   return li;
 }
 
@@ -1597,6 +1746,23 @@ function sheetPages(n, label){
 }
 
 /* ---------- Agenda della settimana ---------- */
+function drawNumBadge(ctx, nx, ny, rad, label, st, fs){
+  ctx.save();
+  const fill = st === 'done' ? '#2e9e5b' : st === 'prio' ? '#ffd83d' : '#ffffff';
+  const line = st === 'done' ? '#2e9e5b' : st === 'prio' ? '#c99a00' : '#24318f';
+  ctx.beginPath(); ctx.arc(nx, ny, rad, 0, 7); ctx.fillStyle = fill; ctx.fill(); ctx.lineWidth = 1.5; ctx.strokeStyle = line; ctx.stroke();
+  ctx.fillStyle = st === 'done' ? '#ffffff' : st === 'prio' ? '#1b1e2b' : '#24318f';
+  ctx.font = `500 ${fs}px Selawik, "Segoe UI", -apple-system, system-ui, sans-serif`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  ctx.fillText(String(label), nx, ny);
+  if (st === 'done'){                                     // visto verde sopra il numero
+    const bx = nx + rad * .78, by = ny - rad * .78, br = Math.max(7, rad * .55);
+    ctx.beginPath(); ctx.arc(bx, by, br + 1.5, 0, 7); ctx.fillStyle = '#ffffff'; ctx.fill();
+    ctx.beginPath(); ctx.arc(bx, by, br, 0, 7); ctx.fillStyle = '#2e9e5b'; ctx.fill();
+    ctx.beginPath(); ctx.moveTo(bx - br * .5, by); ctx.lineTo(bx - br * .1, by + br * .4); ctx.lineTo(bx + br * .55, by - br * .4);
+    ctx.strokeStyle = '#ffffff'; ctx.lineWidth = 1.8; ctx.lineCap = 'round'; ctx.lineJoin = 'round'; ctx.stroke();
+  }
+  ctx.restore();
+}
 function drawDayBox(ctx, sec, x, y, w, h, s, inkList){
   const sr = sec.getBoundingClientRect(), host = document.querySelector('.left').getBoundingClientRect();
   const key = sec.dataset.day, d = fromKey(key);
@@ -1633,6 +1799,8 @@ function drawDayBox(ctx, sec, x, y, w, h, s, inkList){
     lines.forEach((l, i) => { ctx.font = (i ? '' : '600 ') + '11px Selawik, "Segoe UI", -apple-system, system-ui, sans-serif'; ctx.fillStyle = i ? '#444a63' : c; ctx.fillText(l, ex + 13, ey + i * 14); });
     ey += lines.length * 14 + 6;
   }
+  // copie dei punti (numeri) lasciate in questo giorno
+  for (const m of (data.marks || [])) if (m.day === key) drawNumBadge(ctx, m.fx * sr.width, m.fy * sr.height, 13, m.row + 1, ptStatus(m.wk, m.row), 12);
   // penna di quel giorno
   const secLeft = sr.left - host.left;
   ctx.translate(-secLeft, 0);
@@ -1670,16 +1838,14 @@ function agendaPages(onlyPoints){
   const ptInk = data.ink['pw:' + ptsWeek] || [], dd = weekData(ptsWeek);
   const rightRows = [...ol.querySelectorAll(':scope > .point')].map((li, i) => {
     const top = li.offsetTop, hgt = li.offsetHeight;
-    const empty = !li.querySelector('textarea').value.trim() && !(dd.done || []).includes(i) && !ptInk.some(st => st.r === i);
+    const empty = !li.querySelector('textarea').value.trim() && !ptStatus(ptsWeek, i) && !ptInk.some(st => st.r === i);
     return {h: hgt * sp, empty, draw:(ctx, y) => {
       ctx.save(); ctx.translate(rightX, y); ctx.scale(sp, sp); ctx.translate(0, -top);
       ctx.beginPath(); ctx.rect(0, top, ol.clientWidth, hgt); ctx.clip();
-      const num = li.querySelector('.num'), done = (dd.done || []).includes(i);
+      const num = li.querySelector('.num'), pst = ptStatus(ptsWeek, i), done = pst === 'done';
+      if (pst === 'prio'){ ctx.fillStyle = '#fff1b0'; ctx.fillRect(0, top, ol.clientWidth, hgt); }
       const nx = num.offsetLeft + num.offsetWidth / 2, ny = num.offsetTop + num.offsetHeight / 2;
-      ctx.beginPath(); ctx.arc(nx, ny, num.offsetWidth / 2 - 1, 0, 7); ctx.lineWidth = 1.5; ctx.strokeStyle = '#24318f';
-      if (done){ ctx.fillStyle = '#24318f'; ctx.fill(); } else ctx.stroke();
-      ctx.fillStyle = done ? '#ffffff' : '#24318f'; ctx.font = '500 13px Selawik, "Segoe UI", -apple-system, system-ui, sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-      ctx.fillText(String(i + 1), nx, ny); ctx.textAlign = 'left';
+      drawNumBadge(ctx, nx, ny, num.offsetWidth / 2 - 1, i + 1, pst, 13); ctx.textBaseline = 'middle';
       const ta = li.querySelector('textarea');
       if (ta.value){
         const tr = ta.getBoundingClientRect();
@@ -2007,6 +2173,7 @@ function drawLive(o){
 /* ---------- Input: penna disegna, dita navigano ---------- */
 function inkAt(t){
   if (!t || !t.closest) return null;
+  if (t.closest('.num,.mark,#numMenu')) return null;   // i numeri dei punti si toccano, non si scrive sopra
   if (!$('notes').hidden) return t.closest('.page') ? notesInk : null;
   if (!$('eventOverlay').hidden || t.closest('.add-point')) return null;
   if (t.closest('#points')) return pointsInk;
