@@ -433,6 +433,26 @@ body:has(#inkPanel:not([hidden])) .notes{padding-bottom:calc(136px + env(safe-ar
   .cal-grid{grid-auto-rows:17px}
   .cal-head .icon-btn{width:26px;height:26px}
 }
+/* 1.22 — Note con iPad in verticale: elenco dei fogli stretto, foglio intero rimpicciolito a destra */
+@media (orientation:portrait) and (min-width:701px){
+  .page-wrap{gap:10px}
+  #mIndex{width:178px}
+  .mhead{padding:8px;gap:6px}
+  .mhead .lbl{font-size:10.5px;letter-spacing:.08em}
+  .mhead .btn{min-height:36px;height:36px;font-size:13px;padding:0 8px}
+  .mi{padding:6px 6px 6px 2px;gap:4px}
+  .mi-h{width:22px;height:30px;font-size:15px}
+  .mi strong{font-size:12px}
+  .mi span{font-size:11px}
+  .notes-bar h3{font-size:22px}
+  .btabs .book{height:34px;padding:0 14px 0 12px;font-size:13px}
+  .btabs .book[aria-current="true"]{height:40px}
+  .mtabs .mtab{height:32px;padding:0 14px 0 12px;font-size:13px}
+  .mtabs .mtab[aria-selected="true"]{height:38px}
+  .mtab-col{height:30px;padding:0 8px;font-size:12px}
+  .page-col{position:relative}
+  .page-col.fit > .page{position:absolute;left:0;transform-origin:0 0;flex:none}
+}
 /* 1.21 — iPad in verticale: giorni sopra (larghi), punti sotto */
 @media (orientation:portrait) and (min-width:701px){
   .sheet{grid-template-columns:minmax(0,1fr);grid-template-rows:minmax(0,60fr) minmax(0,40fr)}
@@ -592,7 +612,7 @@ body:has(#inkPanel:not([hidden])) .notes{padding-bottom:calc(136px + env(safe-ar
       </div>
     </div>
     <p class="err" id="bkErr" hidden></p>
-    <div class="actions"><span class="ver" style="margin-right:auto;align-self:center">Agenda 1.21</span><button class="btn" id="appUpdate">Aggiorna app</button><button class="btn" id="menuClose">Chiudi</button></div>
+    <div class="actions"><span class="ver" style="margin-right:auto;align-self:center">Agenda 1.22</span><button class="btn" id="appUpdate">Aggiorna app</button><button class="btn" id="menuClose">Chiudi</button></div>
   </div>
 </div>
 
@@ -1648,6 +1668,28 @@ function openTabColors(btn){
 }
 document.addEventListener('pointerdown', e => { if (!tabColors.hidden && !e.target.closest('#tabColors,.mtab-col')) tabColors.hidden = true; }, true);
 
+/* ===== 1.22 — iPad in verticale: il foglio intero (larghezza 860) rimpicciolito per entrare a destra ===== */
+const NOTE_W = 860, portraitMQ = matchMedia('(orientation:portrait) and (min-width:701px)');
+function fitNotesPage(){
+  const col = $('pageCol'), pg = document.querySelector('.page');
+  if (!col || !pg) return;
+  const on = portraitMQ.matches && !$('notes').hidden && !pg.hidden && col.clientWidth > 0 && col.clientWidth < NOTE_W;
+  if (!on){
+    if (col.classList.contains('fit')){ col.classList.remove('fit'); Object.assign(pg.style, {width:'', height:'', top:'', transform:''}); notesInk.size(); }
+    return;
+  }
+  const k = col.clientWidth / NOTE_W;
+  let top = 0;
+  for (const id of ['books', 'mtabs']){ const e = $(id); if (e && !e.hidden && e.offsetHeight) top = Math.max(top, e.offsetTop + e.offsetHeight); }
+  col.classList.add('fit');
+  Object.assign(pg.style, {width:NOTE_W + 'px', height:((col.clientHeight - top) / k) + 'px', top:top + 'px', transform:`scale(${k})`});
+  notesInk.size();
+}
+if (window.ResizeObserver) new ResizeObserver(() => fitNotesPage()).observe($('pageCol'));
+portraitMQ.addEventListener?.('change', fitNotesPage);
+// fattore di scala del foglio (1 se non è rimpicciolito): serve a convertire i tocchi in coordinate del foglio
+const zk = o => (o && o.c && o.c.offsetWidth ? o.c.getBoundingClientRect().width / o.c.offsetWidth : 1) || 1;
+
 /* ---------- Disegno della schermata ---------- */
 function renderNotes(){
   ensureBooks(); migrateMeetings();
@@ -1706,6 +1748,7 @@ function renderNotes(){
     $('pageMeta').replaceChildren(`${book.name} · foglio ${pos + 1} di ${list.length} · creato il ${new Date(cur.created || cur.id).toLocaleDateString('it-IT')}`);
   }
   renderMTabs(cur);
+  requestAnimationFrame(fitNotesPage);
   $('sheetText').value = cur.text;
   $('sheetText').readOnly = mode === 'ink';
   const pg = document.querySelector('.page');
@@ -2655,7 +2698,8 @@ function toPt(e, prev){
   let raw = active.pen ? e.pressure : 0.5;
   if (!(raw > 0)) raw = prev ? prev[2] : 0.35;
   const pr = prev ? prev[2]*0.6 + raw*0.4 : raw;    // pressione ammorbidita: spessore senza scatti
-  return [Math.round((e.clientX - r.left)*10)/10, Math.round((e.clientY - r.top)*10)/10, Math.round(pr*100)/100];
+  const k = active.k || 1;
+  return [Math.round((e.clientX - r.left)/k*10)/10, Math.round((e.clientY - r.top)/k*10)/10, Math.round(pr*100)/100];
 }
 document.addEventListener('pointerdown', e => {
   // incolla: il primo tocco (penna o dito) in un'area scrivibile indica il punto
@@ -2670,7 +2714,7 @@ document.addEventListener('pointerdown', e => {
   e.preventDefault(); e.stopPropagation();
   if (document.activeElement && document.activeElement !== document.body) document.activeElement.blur();
   o.readTops();
-  active = {o, id:e.pointerId, rect:o.c.getBoundingClientRect(), pen:e.pointerType === 'pen'};
+  active = {o, id:e.pointerId, rect:o.c.getBoundingClientRect(), k:zk(o), pen:e.pointerType === 'pen'};
   penBusy = true;
   if (tool === 'eraser'){
     active.erasing = true; active.before = o.list().slice(); eraseAt(o, toPt(e)); return;
@@ -2882,7 +2926,7 @@ function charBoxes(ta){
   const v = ta.value, spans = [];
   for (let i = 0; i < v.length; i++){ const sp = document.createElement('span'); sp.textContent = v[i]; m.append(sp); spans.push(sp); }
   m.append(document.createTextNode('​'));
-  document.body.append(m);
+  (ta.closest('.page') || document.body).append(m);           // dentro il foglio: stessa scala del testo
   const mr = m.getBoundingClientRect(), tr = ta.getBoundingClientRect();
   const boxes = spans.map(sp => { const r = sp.getBoundingClientRect();
     return {x: tr.left + r.left - mr.left - ta.scrollLeft, y: tr.top + r.top - mr.top - ta.scrollTop, w: r.width, h: r.height}; });
@@ -2933,7 +2977,7 @@ function refreshTexts(){
 function textareaAt(o, cx, cy){
   const hit = document.elementsFromPoint(cx, cy).find(x => x.tagName === 'TEXTAREA' && o.host.contains(x));
   if (hit) return hit;
-  const r = o.c.getBoundingClientRect(), y = cy - r.top, x = cx - r.left;
+  const r = o.c.getBoundingClientRect(), k = zk(o), y = (cy - r.top) / k, x = (cx - r.left) / k;
   if (o === pointsInk){ o.readTops(); return $('points').children[o.rowAt(y)]?.querySelector('textarea') || null; }
   if (o === leftInk){ o.readTops(); const d = o.dayAt(x, y); return d ? document.querySelector(`.day[data-day="${d}"] .memo`) : null; }
   if (o === notesInk) return $('sheetText');
@@ -2950,12 +2994,12 @@ function finishLasso(o, poly){
   o.readTops();
   const inside = (x, y) => pip(x, y, poly);
   const strokes = o.list().filter(s => { const off = o.offset(s); const n = s.pts.filter(q => inside(q[0], q[1] + off)).length; return n > 0 && n >= s.pts.length * 0.5; });
-  const rect = o.c.getBoundingClientRect(), texts = [];
+  const rect = o.c.getBoundingClientRect(), zz = zk(o), texts = [];
   for (const ta of o.host.querySelectorAll('textarea')){
     if (!ta.value || !ta.offsetParent) continue;
     const ref = refOf(ta); if (!ref) continue;
     const boxes = charBoxes(ta), v = ta.value, idx = [];
-    boxes.forEach((b, i) => { if (v[i] !== '\n' && b.w > 0 && inside(b.x - rect.left + b.w/2, b.y - rect.top + b.h/2)) idx.push(i); });
+    boxes.forEach((b, i) => { if (v[i] !== '\n' && b.w > 0 && inside((b.x - rect.left + b.w/2) / zz, (b.y - rect.top + b.h/2) / zz)) idx.push(i); });
     if (!idx.length) continue;
     const ranges = []; let st = idx[0], pv = idx[0];
     for (const i of idx.slice(1)){
@@ -2986,7 +3030,7 @@ function clearSel(){
 function takeSel(cut, move){
   if (!lassoSel) return;
   const {o, strokes, texts, box} = lassoSel;
-  const r0 = o.c.getBoundingClientRect(), gx = r0.left + box[0], gy = r0.top + box[1];
+  const r0 = o.c.getBoundingClientRect(), z0 = zk(o), gx = r0.left + box[0] * z0, gy = r0.top + box[1] * z0;
   clip = {
     w: box[2] - box[0], h: box[3] - box[1],
     ink: strokes.map(s => { const off = o.offset(s);
@@ -3020,7 +3064,7 @@ function startPaste(what){
 function stopPaste(){ pasteMode = false; document.body.classList.remove('pasting'); $('pasteBar').hidden = true; }
 function doPaste(o, cx, cy){
   stopPaste();
-  const rect = o.c.getBoundingClientRect(), px = cx - rect.left, py = cy - rect.top;
+  const rect = o.c.getBoundingClientRect(), zp = zk(o), px = (cx - rect.left) / zp, py = (cy - rect.top) / zp;
   o.readTops();
   const action = {ink:[], text:[]};
   if (clip.text){
