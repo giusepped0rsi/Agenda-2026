@@ -323,6 +323,26 @@ body.pasting .left,body.pasting .points,body.pasting .page{cursor:copy}
 .page-meta{font-family:var(--f-mono);font-size:12px;color:var(--muted);padding:14px 28px 0 72px;font-variant-numeric:tabular-nums}
 .page textarea{display:block;width:100%;border:0;resize:none;overflow:hidden;padding:6px 28px 28px 72px;font-size:17px;line-height:32px;
   background-color:transparent;background-image:linear-gradient(to bottom,transparent 31px,var(--rule) 31px);background-size:100% 32px;background-position:0 6px}
+/* 1.19 — verbale dello staff meeting a linguette */
+.page-col{width:min(860px,100%);height:100%;display:flex;flex-direction:column;min-height:0;min-width:0}
+.page-col > .page{width:100%;flex:1;height:auto;min-height:0}
+.page-col.tabbed > .page{border-top:4px solid var(--tabc,var(--ink));border-top-left-radius:0;transition:border-color .2s}
+.mtabs{display:flex;align-items:flex-end;gap:3px;flex:none;padding:6px 2px 0;overflow-x:auto;scrollbar-width:none}
+.mtabs[hidden]{display:none}
+.mtab{--c:var(--ink);flex:none;position:relative;height:40px;padding:0 24px 0 18px;border:1.5px solid var(--c);border-bottom:0;border-radius:12px 20px 0 0;
+  background:color-mix(in srgb,var(--c) 16%,var(--surface));color:var(--text);font:600 15px/1 var(--f-body);cursor:pointer;
+  transition:height .18s,background-color .18s,color .18s;box-shadow:0 -1px 4px rgba(20,26,70,.06)}
+.mtab[aria-selected="true"]{height:47px;background:var(--c);color:var(--on,#fff);box-shadow:0 -3px 10px rgba(20,26,70,.16);z-index:1}
+.mtab .cnt{display:inline-block;margin-left:8px;min-width:20px;padding:2px 6px;border-radius:10px;background:rgba(255,255,255,.75);color:#1b1e2b;font-size:11px}
+.mtab:focus-visible{outline:2px solid var(--ink);outline-offset:2px}
+.mtab-col{flex:none;margin-left:auto;align-self:center;height:34px;padding:0 12px;border-radius:9px;border:1px solid var(--rule);background:var(--surface);color:var(--ink);font:600 13px var(--f-body);display:flex;align-items:center;gap:6px}
+.mtab-col i{width:12px;height:12px;border-radius:50%;display:inline-block}
+#tabColors{position:fixed;z-index:85;background:var(--surface);border:1px solid var(--rule);border-radius:12px;box-shadow:var(--shadow);padding:12px 14px;display:flex;flex-direction:column;gap:10px}
+#tabColors[hidden]{display:none}
+#tabColors .tc-row{display:flex;align-items:center;gap:8px}
+#tabColors .tc-row span{width:120px;font-size:14px;font-weight:600}
+#tabColors .sw{width:28px;height:28px;border-radius:50%;border:2px solid var(--surface);box-shadow:0 0 0 1px var(--rule);padding:0;cursor:pointer}
+#tabColors .sw[aria-pressed="true"]{box-shadow:0 0 0 2.5px var(--text)}
 .fab{position:absolute;right:calc(20px + env(safe-area-inset-right,0px));bottom:20px;width:64px;height:64px;border-radius:50%;border:0;background:var(--ink);color:var(--surface);font-size:34px;line-height:1;box-shadow:var(--shadow)}
 
 .toast{position:fixed;left:50%;top:calc(64px + env(safe-area-inset-top,0px));transform:translateX(-50%);background:var(--text);color:var(--surface);padding:10px 18px;border-radius:10px;font-size:14px;z-index:80}
@@ -535,7 +555,7 @@ body:has(#inkPanel:not([hidden])) .notes{padding-bottom:calc(136px + env(safe-ar
       </div>
     </div>
     <p class="err" id="bkErr" hidden></p>
-    <div class="actions"><span class="ver" style="margin-right:auto;align-self:center">Agenda 1.18</span><button class="btn" id="appUpdate">Aggiorna app</button><button class="btn" id="menuClose">Chiudi</button></div>
+    <div class="actions"><span class="ver" style="margin-right:auto;align-self:center">Agenda 1.19</span><button class="btn" id="appUpdate">Aggiorna app</button><button class="btn" id="menuClose">Chiudi</button></div>
   </div>
 </div>
 
@@ -607,13 +627,16 @@ body:has(#inkPanel:not([hidden])) .notes{padding-bottom:calc(136px + env(safe-ar
       <div class="mlist" id="mList"></div>
     </aside>
     <div class="m-empty" id="mEmpty" hidden>
-      <p>Non c’è ancora nessuno staff meeting.<br>Il verbale nuovo ha già titolo, data e le sezioni Partecipanti, Punti trattati, Decisioni e Azioni.</p>
+      <p>Non c’è ancora nessuno staff meeting.<br>Il verbale nuovo ha le linguette Partecipanti, Punti trattati e Azioni.</p>
       <button class="btn primary" id="mEmptyNew" type="button">+ Nuovo staff meeting</button>
     </div>
+    <div class="page-col" id="pageCol">
+    <div class="mtabs" id="mtabs" role="tablist" aria-label="Sezioni del verbale" hidden></div>
     <div class="page">
       <div class="page-meta" id="pageMeta"></div>
       <textarea id="sheetText" aria-label="Testo del foglio" placeholder="Scrivi qui con la tastiera o con Apple Pencil…"></textarea>
       <div class="a4marks" id="a4marks" aria-hidden="true"></div>
+    </div>
     </div>
     <button class="fab" id="addSheet" aria-label="Aggiungi foglio" hidden>+</button>
   </div>
@@ -1432,8 +1455,8 @@ function meetingText(dateKey, time){
          `AZIONI (chi · cosa · entro)\n- \n- \n`;
 }
 function newMeeting(dateKey, ev){
-  const n = {id:Date.now(), text:meetingText(dateKey, ev && !ev.allDay ? ev.time : ''), created:Date.now(),
-             book:BOOK_STAFF, date:dateKey, eventId: ev ? ev.id : undefined, sent:[]};
+  const n = {id:Date.now(), text:'', created:Date.now(), book:BOOK_STAFF, date:dateKey, eventId: ev ? ev.id : undefined, sent:[],
+             time: ev && !ev.allDay ? ev.time : undefined, tabs:{p:{text:''}, t:{text:''}, a:{text:''}}, tab:'p'};
   data.notes.push(n); data.book = BOOK_STAFF; data.noteIdx = data.notes.length - 1; data.bookPos[BOOK_STAFF] = n.id;
   save(); return n;
 }
@@ -1456,9 +1479,97 @@ function meetingSummary(n){                                // prima riga utile d
   return l ? l.replace(/^([-•*–]|\d+[.)])\s*/, '') : 'Da compilare';
 }
 
+/* ===== 1.19 — Verbale a linguette: Partecipanti · Punti trattati · Azioni =====
+   Ogni linguetta ha testo e penna propri (penna: chiave "n:<id>:<linguetta>").
+   n.text è sempre il testo della linguetta aperta, così tutte le funzioni del foglio restano uguali. */
+const MTABS = [{k:'p', name:'Partecipanti', hint:'Scrivi qui i partecipanti, con la tastiera o con Apple Pencil…'},
+               {k:'t', name:'Punti trattati', hint:'Scrivi qui i punti trattati…'},
+               {k:'a', name:'Azioni', hint:'Una azione per riga (chi · cosa · entro). Con “Azioni → punti” vanno nei punti della settimana.'}];
+const TAB_DEF = {p:'#2f6fd0', t:'#2f9e6b', a:'#d9822b'};
+const TAB_SWATCH = ['#2f6fd0','#0e7c86','#2f9e6b','#7a9a1e','#d9a21b','#d9822b','#c2414b','#b83280','#7b4bbd','#5b6475'];
+const tabColor = k => ((data.prefs || {}).tabColors || {})[k] || TAB_DEF[k];
+const onColor = hex => { const v = parseInt(hex.slice(1), 16), r = v >> 16, g = v >> 8 & 255, b = v & 255; return (r * .299 + g * .587 + b * .114) > 170 ? '#1b1e2b' : '#ffffff'; };
+function inkKeyOf(n){ return n && n.tabs ? `n:${n.id}:${n.tab || 'p'}` : 'n:' + (n || {}).id; }
+function allInkKeys(n){ return n.tabs ? MTABS.map(T => `n:${n.id}:${T.k}`) : ['n:' + n.id]; }
+const tabText = (n, k) => (k === n.tab ? n.text : (n.tabs[k] || {}).text) || '';
+const cleanLine = l => l.replace(/^([-•*–]|\d+[.)])\s*/, '').trim();
+function setTab(n, k){
+  n.tabs[n.tab].text = n.text; n.tabs[n.tab].extra = n.extra || 0;
+  n.tab = k; n.text = n.tabs[k].text || ''; n.extra = n.tabs[k].extra || 0;
+}
+function toTabs(n){                                         // verbale vecchio (foglio unico) → linguette
+  const buf = {p:[], t:[], a:[]}, dec = [];
+  let cur = 'p';
+  n.text.split('\n').forEach((raw, i) => {
+    const t = raw.trim();
+    if (i === 0 && /^Staff Meeting/i.test(t)){ const m = t.match(/ore (\d\d:\d\d)/); if (m) n.time = m[1]; return; }
+    if (/^PARTECIPANTI\b/i.test(t)){ cur = 'p'; return; }
+    if (/^PUNTI TRATTATI\b/i.test(t)){ cur = 't'; return; }
+    if (/^DECISIONI\b/i.test(t)){ cur = 'd'; return; }
+    if (/^AZIONI\b/i.test(t)){ cur = 'a'; return; }
+    (cur === 'd' ? dec : buf[cur]).push(raw);
+  });
+  const tidy = arr => { const a = arr.filter(l => !/^\s*([-•*–]|\d+[.)])\s*$/.test(l));
+    while (a.length && !a[0].trim()) a.shift(); while (a.length && !a[a.length - 1].trim()) a.pop(); return a.join('\n'); };
+  const d = tidy(dec);
+  n.tabs = {p:{text:tidy(buf.p)}, t:{text:tidy(buf.t) + (d ? (tidy(buf.t) ? '\n\n' : '') + 'Decisioni:\n' + d : '')}, a:{text:tidy(buf.a)}};
+  if (data.ink['n:' + n.id]){ data.ink[`n:${n.id}:p`] = data.ink['n:' + n.id]; delete data.ink['n:' + n.id]; }   // la penna resta nella prima linguetta
+  n.tab = 'p'; n.text = n.tabs.p.text; n.extra = 0;
+}
+function migrateMeetings(){
+  let ch = false;
+  for (const n of data.notes) if (n.book === BOOK_STAFF && !n.tabs && /^\s*(PARTECIPANTI|PUNTI TRATTATI|AZIONI)\b/im.test(n.text || '')){ toTabs(n); ch = true; }
+  if (ch) save();
+}
+function actionsOf(n){ return n.tabs ? tabText(n, 'a').split('\n').map(cleanLine).filter(Boolean) : parseActions(n.text); }
+function summaryOf(n){
+  if (!n.tabs) return meetingSummary(n);
+  for (const k of ['t', 'p']){ const l = tabText(n, k).split('\n').map(cleanLine).find(Boolean); if (l) return l; }
+  return 'Da compilare';
+}
+function renderMTabs(cur){
+  const col = $('pageCol'), bar = $('mtabs'), on = !!(cur && cur.tabs);
+  bar.hidden = !on; col.classList.toggle('tabbed', on);
+  $('sheetText').placeholder = on ? (MTABS.find(T => T.k === cur.tab) || MTABS[0]).hint : 'Scrivi qui con la tastiera o con Apple Pencil…';
+  if (!on){ col.style.removeProperty('--tabc'); return; }
+  col.style.setProperty('--tabc', tabColor(cur.tab));
+  const acts = actionsOf(cur).length;
+  bar.replaceChildren(...MTABS.map(T => {
+    const b = el('button', 'mtab', T.name); b.type = 'button'; b.setAttribute('role', 'tab');
+    b.setAttribute('aria-selected', cur.tab === T.k); b.dataset.k = T.k;
+    b.style.setProperty('--c', tabColor(T.k)); b.style.setProperty('--on', onColor(tabColor(T.k)));
+    if (T.k === 'a' && acts) b.append(el('span', 'cnt', String(acts)));
+    b.onclick = () => { if (cur.tab === T.k) return; setTab(cur, T.k); save(); renderNotes(); if (mode !== 'ink') $('sheetText').focus({preventScroll:true}); };
+    return b;
+  }), (() => {
+    const c = el('button', 'mtab-col'); c.type = 'button'; c.setAttribute('aria-label', 'Scegli i colori delle linguette');
+    c.append(...MTABS.map(T => { const i = el('i'); i.style.background = tabColor(T.k); return i; }), 'Colori');
+    c.onclick = e => { e.stopPropagation(); openTabColors(c); };
+    return c;
+  })());
+}
+const tabColors = el('div'); tabColors.id = 'tabColors'; tabColors.hidden = true; document.body.append(tabColors);
+function openTabColors(btn){
+  const draw = () => tabColors.replaceChildren(el('div', 'nm-h', 'Colore delle linguette'), ...MTABS.map(T => {
+    const row = el('div', 'tc-row'); row.append(el('span', null, T.name));
+    for (const c of TAB_SWATCH){
+      const s = el('button', 'sw'); s.type = 'button'; s.style.background = c; s.setAttribute('aria-label', `${T.name}: colore ${c}`);
+      s.setAttribute('aria-pressed', tabColor(T.k) === c);
+      s.onclick = () => { const pr = (data.prefs ||= {cal:true, alarm:'15', alarmDay:'same8'}); (pr.tabColors ||= {})[T.k] = c; save(); draw(); renderMTabs(data.notes[data.noteIdx]); };
+      row.append(s);
+    }
+    return row;
+  }));
+  draw(); tabColors.hidden = false;
+  const r = btn.getBoundingClientRect(), w = tabColors.offsetWidth;
+  tabColors.style.left = Math.max(8, Math.min(innerWidth - w - 8, r.right - w)) + 'px';
+  tabColors.style.top = (r.bottom + 8) + 'px';
+}
+document.addEventListener('pointerdown', e => { if (!tabColors.hidden && !e.target.closest('#tabColors,.mtab-col')) tabColors.hidden = true; }, true);
+
 /* ---------- Disegno della schermata ---------- */
 function renderNotes(){
-  ensureBooks();
+  ensureBooks(); migrateMeetings();
   const book = curBook();
   if (!book.meeting && !bookSheets().length) data.notes.push({id:Date.now(), text:'', created:Date.now(), book:book.id});
   const list = bookSheets();
@@ -1482,8 +1593,8 @@ function renderNotes(){
   renderSheetPaste();
   $('tabs').hidden = true;
   $('mIndex').hidden = false;
-  $('sendActions').hidden = !(book.meeting && has);
-  document.querySelector('.page').hidden = !has;
+  $('sendActions').hidden = !(has && (book.meeting || data.notes[data.noteIdx].tabs));
+  document.querySelector('.page').hidden = !has; if (!has) $('mtabs').hidden = true;
   $('mEmpty').hidden = has;
   $('addSheet').setAttribute('aria-label', book.meeting ? 'Nuovo staff meeting' : 'Aggiungi foglio');
   const pos = list.indexOf(data.noteIdx);
@@ -1498,16 +1609,18 @@ function renderNotes(){
 
   const cur = data.notes[data.noteIdx];
   if (book.meeting){
-    $('pageMeta').replaceChildren('Staff meeting del ', mDateWrapEl); mDateWrapEl.hidden = false;
+    $('pageMeta').replaceChildren('Staff meeting del ', mDateWrapEl, cur.time ? ` · ore ${cur.time}` : ''); mDateWrapEl.hidden = false;
     mDateEl.value = cur.date || keyOf(today);
   } else {
     $('pageMeta').replaceChildren(`${book.name} · foglio ${pos + 1} di ${list.length} · creato il ${new Date(cur.created || cur.id).toLocaleDateString('it-IT')}`);
   }
+  renderMTabs(cur);
   $('sheetText').value = cur.text;
   $('sheetText').readOnly = mode === 'ink';
   const pg = document.querySelector('.page');
-  if (pg.dataset.shown !== String(cur.id)){              // cambio foglio: torna in cima con dissolvenza
-    pg.dataset.shown = cur.id; pg.scrollTop = 0;
+  const shown = cur.tabs ? cur.id + ':' + cur.tab : String(cur.id);
+  if (pg.dataset.shown !== shown){                        // cambio foglio o linguetta: torna in cima con dissolvenza
+    pg.dataset.shown = shown; pg.scrollTop = 0;
     pg.classList.remove('flip'); void pg.offsetWidth; pg.classList.add('flip');
   }
   sizeSheet();
@@ -1537,9 +1650,9 @@ function renderSheetList(list){
     const h = el('span', 'mi-h', '≡'); h.setAttribute('aria-label', 'Trascina per cambiare posizione'); h.title = 'Trascina per spostare';
     const tx = el('span', 'mi-t');
     if (book.meeting){
-      const acts = parseActions(n.text).length;
+      const acts = actionsOf(n).length;
       tx.append(el('strong', null, fmt(fromKey(n.date || keyOf(new Date(n.created))), {weekday:'short', day:'numeric', month:'long', year:'numeric'})),
-                el('span', null, meetingSummary(n) + (acts ? ` · ${acts} ${acts === 1 ? 'azione' : 'azioni'}` : '')));
+                el('span', null, summaryOf(n) + (acts ? ` · ${acts} ${acts === 1 ? 'azione' : 'azioni'}` : '')));
     } else {
       tx.append(el('strong', null, sheetTitle(n)), el('span', null, `Foglio ${k + 1} · ${new Date(n.created || n.id).toLocaleDateString('it-IT')}`));
     }
@@ -1591,11 +1704,13 @@ function applySheetOrder(ids){
 /* ---------- Azioni ---------- */
 $('sheetText').oninput = e => {
   const cur = data.notes[data.noteIdx]; if (!cur) return;
-  cur.text = e.target.value; save(); sizeSheet();
+  cur.text = e.target.value; if (cur.tabs) cur.tabs[cur.tab].text = cur.text; save(); sizeSheet();
   // aggiorna solo la voce del foglio nell'elenco a sinistra
   const it = $('mList').querySelector(`.mi[data-id="${cur.id}"] .mi-t`);
+  if (cur.tabs){ const c = $('mtabs').querySelector('.mtab[data-k="a"]'), n = actionsOf(cur).length;
+    if (c){ c.querySelector('.cnt')?.remove(); if (n) c.append(el('span', 'cnt', String(n))); } }
   if (it){
-    if (curBook().meeting){ const acts = parseActions(cur.text).length; it.lastChild.textContent = meetingSummary(cur) + (acts ? ` · ${acts} ${acts === 1 ? 'azione' : 'azioni'}` : ''); }
+    if (curBook().meeting){ const acts = actionsOf(cur).length; it.lastChild.textContent = summaryOf(cur) + (acts ? ` · ${acts} ${acts === 1 ? 'azione' : 'azioni'}` : ''); }
     else it.firstChild.textContent = sheetTitle(cur);
   }
 };
@@ -1623,7 +1738,7 @@ $('delSheet').onclick = () => {
   const b = $('delSheet'), cur = data.notes[data.noteIdx]; if (!cur) return;
   if (!b.classList.contains('armed')){ b.classList.add('armed'); b.textContent = 'Tocca di nuovo per eliminare'; return; }
   closeSheetMenu(); if (sheetClip && sheetClip.id === cur.id) sheetClip = null;
-  delete data.ink['n:' + cur.id];
+  for (const k of allInkKeys(cur)) delete data.ink[k];
   data.notes.splice(data.noteIdx, 1); data.noteIdx = -1; data.bookPos[data.book] = null;
   save(); renderNotes(); toast(curBook().meeting ? 'Verbale eliminato' : 'Foglio eliminato');
 };
@@ -1650,7 +1765,7 @@ function freeRows(wk){                                      // righe senza testo
 function inkActions(n){
   const ta = $('sheetText'), text = n.text, boxes = boxesFor(ta, text), taY = ta.offsetTop, grid0 = taY + 6;
   const lineOf = y => Math.floor((y - grid0) / 32);
-  let pos = 0, inA = false, aStart = null, aEnd = Infinity;
+  let pos = 0, inA = !!n.tabs, aStart = n.tabs ? 0 : null, aEnd = Infinity;   // linguetta Azioni: tutto il foglio
   const typed = new Set();
   for (const l of text.split('\n')){
     const t = l.trim(), b0 = boxes[pos], y = taY + (b0 ? b0.y : 0);
@@ -1663,7 +1778,7 @@ function inkActions(n){
   }
   if (aStart == null) return [];
   const groups = {};
-  for (const st of (data.ink['n:' + n.id] || [])){
+  for (const st of (data.ink[inkKeyOf(n)] || [])){
     const ys = st.pts.map(q => q[1]), cy = (Math.min(...ys) + Math.max(...ys)) / 2, li = lineOf(cy);
     if (li < aStart || li >= aEnd || typed.has(li)) continue;
     (groups[li] ||= []).push(st);
@@ -1708,9 +1823,10 @@ function addToPoints(items){
 }
 $('sendActions').onclick = () => {
   const cur = data.notes[data.noteIdx]; if (!cur) return;
+  if (cur.tabs && cur.tab !== 'a'){ setTab(cur, 'a'); renderNotes(); }   // le azioni a penna si leggono dalla linguetta Azioni
   writeNow();
   const sent = new Set([...(cur.sent || []), ...(cur.sentInk || [])]);
-  actItems = parseActions(cur.text).concat(inkActions(cur));
+  actItems = actionsOf(cur).concat(inkActions(cur));
   const wk = curWeek(), lb = weekLabel(wk);
   $('actWeek').textContent = `${lb.title} (${lb.range})`;
   $('actList').replaceChildren(...actItems.map((a, k) => {
@@ -1751,7 +1867,7 @@ $('evMinutes').onclick = () => { const ev = editing; if (!ev) return; closeEvent
 
 /* ---------- Taglia / Copia e Incolla dei fogli tra quaderni ---------- */
 let sheetClip = null;                                       // {id, op:'cut'|'copy'}
-function sheetTitle(n){ const f = firstLine(n.text); return f ? (f.length > 40 ? f.slice(0, 40) + '…' : f) : 'Foglio vuoto'; }
+function sheetTitle(n){ if (n.tabs) return `Staff meeting del ${fmt(fromKey(n.date || keyOf(new Date(n.created))), {day:'2-digit', month:'2-digit', year:'numeric'})}`; const f = firstLine(n.text); return f ? (f.length > 40 ? f.slice(0, 40) + '…' : f) : 'Foglio vuoto'; }
 function renderSheetPaste(){
   const n = sheetClip && data.notes.find(x => x.id === sheetClip.id);
   if (!n){ sheetClip = null; $('sheetPaste').hidden = true; return; }
@@ -1786,7 +1902,7 @@ $('sheetPasteOk').onclick = () => {
     n.book = dest.id; target = n;
   } else {
     target = {...JSON.parse(JSON.stringify(n)), id:Date.now(), created:Date.now(), book:dest.id, eventId:undefined, sent:[]};
-    if (data.ink['n:' + n.id]) data.ink['n:' + target.id] = JSON.parse(JSON.stringify(data.ink['n:' + n.id]));  // copia anche la penna
+    allInkKeys(n).forEach(k => { if (data.ink[k]) data.ink[k.replace('n:' + n.id, 'n:' + target.id)] = JSON.parse(JSON.stringify(data.ink[k])); });  // copia anche la penna
     data.notes.push(target);
   }
   if (dest.meeting && !target.date) target.date = keyOf(today);           // nei verbali serve una data
@@ -1881,19 +1997,64 @@ function footer(P, text){
 }
 
 /* ---------- Fogli delle Note ---------- */
-function sheetLayout(n){
+function sheetLayout(n, tk){
   const page = document.querySelector('.page'), ta = $('sheetText');
   const W = page.clientWidth, taX = ta.offsetLeft, taY = ta.offsetTop;
-  const runs = runsOf(n.text, boxesFor(ta, n.text), taX, taY);
-  const ink = data.ink['n:' + n.id] || [];
+  const text = tk ? (tk === n.tab ? n.text : tabText(n, tk)) : n.text;
+  const runs = runsOf(text, boxesFor(ta, text), taX, taY);
+  const ink = data.ink[tk ? `n:${n.id}:${tk}` : inkKeyOf(n)] || [];
   const textBottom = runs.reduce((m, r) => Math.max(m, r.y + r.h), taY + 32);
   const inkBottom = ink.reduce((m, s) => Math.max(m, ...s.pts.map(q => q[1] + (s.w || 2))), 0) + 20;
   const {grid0, P} = a4Geom(), nPages = a4Pages(Math.max(textBottom, inkBottom) + (n.extra || 0) * 32);
   const meta = n.book === BOOK_STAFF ? `Staff meeting del ${fmt(fromKey(n.date || keyOf(today)), {day:'2-digit', month:'2-digit', year:'numeric'})}`
                                      : `${(data.books.find(b => b.id === n.book) || {}).name || 'Note'} · creato il ${new Date(n.created || n.id).toLocaleDateString('it-IT')}`;
-  return {n, W, H: grid0 + nPages * P, P, grid0, taX, taY, runs, ink, meta, font: fontOf(getComputedStyle(ta)), metaFont: fontOf(getComputedStyle($('pageMeta')))};
+  return {n, W, H: grid0 + nPages * P, P, grid0, taX, taY, runs, ink, meta, bottom: Math.max(textBottom, inkBottom - 20), font: fontOf(getComputedStyle(ta)), metaFont: fontOf(getComputedStyle($('pageMeta')))};
+}
+// Verbale a linguette: un unico PDF con le sezioni una sotto l'altra, ognuna col suo titolo colorato
+function meetingPages(n, label){
+  const M = 60, FOOT = 70, pages = [];
+  const L0 = sheetLayout(n, 'p'), k = (PX_PORTRAIT[0] - 2 * M) / L0.W, FH = (PX_PORTRAIT[1] - M - FOOT - 10) / k;
+  let P = null, cur = 0;
+  const page = () => { P = newPage(false); pages.push(P); cur = 8; };
+  page();
+  const {ctx: c0} = P; c0.save(); c0.translate(M, M); c0.scale(k, k);
+  c0.fillStyle = '#666c86'; c0.font = L0.metaFont; c0.textBaseline = 'top'; c0.fillText(L0.meta + (n.time ? ` · ore ${n.time}` : ''), 72, 14); c0.restore();
+  cur = L0.taY;
+  for (const T of MTABS){
+    const L = sheetLayout(n, T.k), col = tabColor(T.k);
+    const s0 = L.taY, s1 = L.grid0 + Math.max(2, Math.ceil((L.bottom - L.grid0) / 32)) * 32;
+    if (cur + 46 + 96 > FH) page();
+    { const {ctx} = P; ctx.save(); ctx.translate(M, M); ctx.scale(k, k);           // linguetta della sezione
+      ctx.font = '600 16px Selawik, "Segoe UI", -apple-system, system-ui, sans-serif';
+      const tw = ctx.measureText(T.name).width + 40;
+      ctx.fillStyle = col; ctx.beginPath(); ctx.moveTo(0, cur + 38); ctx.lineTo(0, cur + 12); ctx.quadraticCurveTo(0, cur, 12, cur);
+      ctx.lineTo(tw - 16, cur); ctx.quadraticCurveTo(tw - 6, cur, tw, cur + 14); ctx.lineTo(tw + 8, cur + 38); ctx.closePath(); ctx.fill();
+      ctx.fillRect(0, cur + 36, L.W, 3);
+      ctx.fillStyle = onColor(col); ctx.textBaseline = 'middle'; ctx.fillText(T.name, 18, cur + 20);
+      ctx.restore(); }
+    cur += 44;
+    for (let t = s0; t < s1; ){
+      let avail = FH - cur;
+      if (avail < 64){ page(); avail = FH - cur; }
+      const take = Math.min(s1 - t, Math.max(32, Math.floor(avail / 32) * 32)), b = t + take;
+      const {ctx} = P; ctx.save(); ctx.translate(M, M); ctx.scale(k, k); ctx.translate(0, cur - t);
+      ctx.beginPath(); ctx.rect(0, t, L.W, take); ctx.clip();
+      ctx.fillStyle = 'rgba(194,65,75,.35)'; ctx.fillRect(55, t, 1, take);
+      ctx.fillStyle = '#d8dbe8'; for (let y = L.grid0 + 31; y < b; y += 32) if (y >= t) ctx.fillRect(0, y, L.W, 1);
+      ctx.fillStyle = '#1b1e2b'; ctx.font = L.font; ctx.textBaseline = 'middle';
+      for (const r of L.runs) if (r.y + r.h >= t && r.y <= b) ctx.fillText(r.str, r.x, r.y + r.h / 2);
+      for (const s of L.ink) if (s.t === 'hl') paint(ctx, s, 0);
+      for (const s of L.ink) if (s.t !== 'hl') paint(ctx, s, 0);
+      ctx.restore();
+      cur += take; t = b;
+    }
+    cur += 22;
+  }
+  pages.forEach((p, i) => { p.ctx.strokeStyle = '#d8dbe8'; p.ctx.lineWidth = 2; p.ctx.strokeRect(M, M, (PX_PORTRAIT[0] - 2 * M), FH * k); footer(p, `${label} · pagina ${i + 1} di ${pages.length}`); });
+  return pages;
 }
 function sheetPages(n, label){
+  if (n.tabs) return meetingPages(n, label);
   const L = sheetLayout(n), pages = [];
   const M = 60, FOOT = 70, k = (PX_PORTRAIT[0] - 2 * M) / L.W;
   const grid0 = L.grid0;
@@ -2511,7 +2672,7 @@ function sizeSheet(){
   const ta = $('sheetText'), cur = data.notes[data.noteIdx];
   ta.style.minHeight = '0px'; ta.style.height = 'auto';
   const taY = ta.offsetTop;
-  const ink = cur ? (data.ink['n:' + cur.id] || []) : [];
+  const ink = cur ? (data.ink[inkKeyOf(cur)] || []) : [];
   const inkBottom = ink.reduce((m, s) => Math.max(m, ...s.pts.map(q => q[1] + (s.w || 2))), 0);
   const need = Math.max(taY + ta.scrollHeight, inkBottom + 20) + ((cur && cur.extra) || 0) * 32;
   const {grid0, P} = a4Geom(), n = a4Pages(need);
@@ -2557,7 +2718,7 @@ function markTarget(){
 const leftInk   = makeInk(document.querySelector('.left'), () => 'w:' + keyOf(mondayOf(fromKey(sel))), {days:true});
 document.querySelector('.weekdays').addEventListener('scroll', () => leftInk.scheduleBase(), {passive:true});
 const pointsInk = makeInk($('points'), () => 'pw:' + ptsWeek, {scroller:true, rows:true});
-const notesInk  = makeInk(document.querySelector('.page'), () => 'n:' + (data.notes[data.noteIdx]||{}).id, {scroller:true});
+const notesInk  = makeInk(document.querySelector('.page'), () => inkKeyOf(data.notes[data.noteIdx]), {scroller:true});
 leftInk.host.append(leftInk.c, leftInk.live);
 notesInk.host.append(notesInk.c, notesInk.live);
 
@@ -2610,21 +2771,23 @@ function nearestIndex(ta, cx, cy){                          // posizione nel tes
 // Riferimento ai dati di ogni campo di testo
 function refOf(ta){
   if (ta.dataset.ref) return ta.dataset.ref;
-  if (ta.id === 'sheetText' && data.notes[data.noteIdx]) return 'note:' + data.notes[data.noteIdx].id;
+  const nn = data.notes[data.noteIdx];
+  if (ta.id === 'sheetText' && nn) return 'note:' + nn.id + (nn.tabs ? ':' + nn.tab : '');
   return null;
 }
 function getRef(ref){
   const [k, a, b] = ref.split(':');
   if (k === 'memo') return dayData(a).memo || '';
   if (k === 'pt') return weekData(a).list[+b] || '';
-  if (k === 'note') return (data.notes.find(n => String(n.id) === a) || {}).text || '';
+  if (k === 'note'){ const n = data.notes.find(x => String(x.id) === a) || {}; return b && n.tabs ? tabText(n, b) : (n.text || ''); }
   return '';
 }
 function setRef(ref, v){
   const [k, a, b] = ref.split(':');
   if (k === 'memo') dayData(a).memo = v;
   else if (k === 'pt'){ const dd = weekData(a); while (dd.list.length <= +b) dd.list.push(''); dd.list[+b] = v; }
-  else if (k === 'note'){ const n = data.notes.find(x => String(x.id) === a); if (n) n.text = v; }
+  else if (k === 'note'){ const n = data.notes.find(x => String(x.id) === a); if (!n) return;
+    if (b && n.tabs){ n.tabs[b].text = v; if (n.tab === b) n.text = v; } else n.text = v; }
 }
 function refreshTexts(){
   renderAll();
