@@ -177,16 +177,13 @@ textarea,input{font:inherit;font-size:16px;color:var(--text)}
 .right-head .carry:active{background:var(--ink);color:var(--surface)}
 /* 1.18 — pagina dell'agenda che si sfoglia sulla piega centrale */
 .sheet{position:relative}
-.flip-stage{position:fixed;z-index:30;pointer-events:none;perspective:2600px;perspective-origin:50% 45%}
-.flip-cover,.flip-strip,.flip-face{position:absolute;top:0;height:100%}
-.flip-cover{overflow:hidden}
-.flip-strip{transform-style:preserve-3d;will-change:transform}
-.flip-face{left:0;width:100%;overflow:hidden;backface-visibility:hidden;-webkit-backface-visibility:hidden}
-.flip-face.back{transform:rotateY(180deg)}
+.flip-stage{position:fixed;z-index:30;pointer-events:none}
+.flip-layer{position:absolute;inset:0;overflow:hidden}
+.flip-flap{overflow:visible;transform-origin:0 0;will-change:transform,filter}
+.flip-fx{pointer-events:none}
+.flip-band{position:absolute;transform-origin:0 50%}
 .flip-snap{position:absolute;top:0;margin:0!important;animation:none!important}
 .flip-snap *{animation:none!important;transition:none!important}
-.flip-shade{position:absolute;inset:0;pointer-events:none;background:#000;opacity:0}
-.flip-cast{position:absolute;top:0;height:100%;pointer-events:none;opacity:0}
 /* 1.18 — trattino a sinistra del numero quando il punto è copiato in un giorno */
 .num.has-copy::before{content:'';position:absolute;left:-10px;top:50%;width:8px;height:2px;margin-top:-1px;border-radius:1px;background:var(--ink)}
 .points{flex:1;min-height:0;overflow-y:auto;list-style:none;margin:0;padding:4px 16px 16px;-webkit-overflow-scrolling:touch}
@@ -243,10 +240,19 @@ textarea.inp{resize:none;line-height:1.45;overflow:hidden}
   padding:calc(12px + env(safe-area-inset-top,0px)) max(16px,env(safe-area-inset-right,0px)) calc(80px + env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px))}
 .notes-bar{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
 .notes-bar h3{margin:0;font-family:var(--f-display);font-size:26px;font-weight:500;flex:none}
-.books{display:flex;gap:3px;padding:3px;border:1px solid var(--rule);border-radius:12px;background:var(--surface);overflow-x:auto;min-width:0;max-width:100%}
-.book{flex:none;border:0;background:none;border-radius:9px;height:36px;padding:0 14px;font-size:14px;font-weight:500;white-space:nowrap;color:var(--text)}
-.book[aria-current="true"]{background:var(--ink);color:var(--surface)}
-.book.add{color:var(--ink)}
+/* 1.20 — quaderni come linguette sopra il foglio */
+.btabs{display:flex;align-items:flex-end;gap:3px;flex:none;padding:4px 2px 0;overflow-x:auto;scrollbar-width:none;min-width:0}
+.book{--c:var(--ink);flex:none;position:relative;height:40px;padding:0 24px 0 18px;border:1.5px solid var(--c);border-bottom:0;border-radius:12px 20px 0 0;
+  background:color-mix(in srgb,var(--c) 14%,var(--surface));color:var(--text);font:600 15px/1 var(--f-body);white-space:nowrap;cursor:pointer;
+  transition:height .18s,background-color .18s,color .18s;box-shadow:0 -1px 4px rgba(20,26,70,.06)}
+.book[aria-current="true"]{height:47px;background:var(--c);color:var(--on,#fff);box-shadow:0 -3px 10px rgba(20,26,70,.16);z-index:1}
+.book.add{--c:var(--muted);border-style:dashed;background:var(--surface);color:var(--ink);font-weight:500;padding:0 16px}
+.book:focus-visible{outline:2px solid var(--ink);outline-offset:2px}
+.notes.is-meeting .btabs{border-bottom:3px solid var(--bookc,var(--ink));padding-bottom:0}
+.notes.is-meeting .mtabs{padding-top:8px}
+.notes.is-meeting .mtab{height:36px;font-size:14px}
+.notes.is-meeting .mtab[aria-selected="true"]{height:42px}
+.page-col > .m-empty{flex:1;align-self:center;justify-content:center}
 .newbook{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
 .newbook .inp{width:min(280px,100%)}
 #mIndex{flex:none;width:280px;display:flex;flex-direction:column;background:var(--surface);border:1px solid var(--rule);border-radius:12px;overflow:hidden;min-height:0}
@@ -326,7 +332,7 @@ body.pasting .left,body.pasting .points,body.pasting .page{cursor:copy}
 /* 1.19 — verbale dello staff meeting a linguette */
 .page-col{width:min(860px,100%);height:100%;display:flex;flex-direction:column;min-height:0;min-width:0}
 .page-col > .page{width:100%;flex:1;height:auto;min-height:0}
-.page-col.tabbed > .page{border-top:4px solid var(--tabc,var(--ink));border-top-left-radius:0;transition:border-color .2s}
+.page-col > .page{border-top:4px solid var(--tabc,var(--ink));border-top-left-radius:0;transition:border-color .2s}
 .mtabs{display:flex;align-items:flex-end;gap:3px;flex:none;padding:6px 2px 0;overflow-x:auto;scrollbar-width:none}
 .mtabs[hidden]{display:none}
 .mtab{--c:var(--ink);flex:none;position:relative;height:40px;padding:0 24px 0 18px;border:1.5px solid var(--c);border-bottom:0;border-radius:12px 20px 0 0;
@@ -340,7 +346,8 @@ body.pasting .left,body.pasting .points,body.pasting .page{cursor:copy}
 #tabColors{position:fixed;z-index:85;background:var(--surface);border:1px solid var(--rule);border-radius:12px;box-shadow:var(--shadow);padding:12px 14px;display:flex;flex-direction:column;gap:10px}
 #tabColors[hidden]{display:none}
 #tabColors .tc-row{display:flex;align-items:center;gap:8px}
-#tabColors .tc-row span{width:120px;font-size:14px;font-weight:600}
+#tabColors .tc-row span{width:130px;font-size:14px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#tabColors .tc-h{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-top:4px}
 #tabColors .sw{width:28px;height:28px;border-radius:50%;border:2px solid var(--surface);box-shadow:0 0 0 1px var(--rule);padding:0;cursor:pointer}
 #tabColors .sw[aria-pressed="true"]{box-shadow:0 0 0 2.5px var(--text)}
 .fab{position:absolute;right:calc(20px + env(safe-area-inset-right,0px));bottom:20px;width:64px;height:64px;border-radius:50%;border:0;background:var(--ink);color:var(--surface);font-size:34px;line-height:1;box-shadow:var(--shadow)}
@@ -555,7 +562,7 @@ body:has(#inkPanel:not([hidden])) .notes{padding-bottom:calc(136px + env(safe-ar
       </div>
     </div>
     <p class="err" id="bkErr" hidden></p>
-    <div class="actions"><span class="ver" style="margin-right:auto;align-self:center">Agenda 1.19</span><button class="btn" id="appUpdate">Aggiorna app</button><button class="btn" id="menuClose">Chiudi</button></div>
+    <div class="actions"><span class="ver" style="margin-right:auto;align-self:center">Agenda 1.20</span><button class="btn" id="appUpdate">Aggiorna app</button><button class="btn" id="menuClose">Chiudi</button></div>
   </div>
 </div>
 
@@ -601,7 +608,6 @@ body:has(#inkPanel:not([hidden])) .notes{padding-bottom:calc(136px + env(safe-ar
 <div class="notes" id="notes" hidden>
   <div class="notes-bar">
     <h3>Blocco note</h3>
-    <div class="books" id="books" role="tablist" aria-label="Quaderni"></div>
     <span class="spacer"></span>
     <button class="btn" id="sendActions" hidden>Azioni → punti</button>
     <button class="icon-btn" id="prevSheet" aria-label="Foglio precedente">‹</button>
@@ -626,12 +632,13 @@ body:has(#inkPanel:not([hidden])) .notes{padding-bottom:calc(136px + env(safe-ar
       </div>
       <div class="mlist" id="mList"></div>
     </aside>
+    <div class="page-col" id="pageCol">
+    <div class="btabs" id="books" role="tablist" aria-label="Quaderni"></div>
+    <div class="mtabs" id="mtabs" role="tablist" aria-label="Sezioni del verbale" hidden></div>
     <div class="m-empty" id="mEmpty" hidden>
       <p>Non c’è ancora nessuno staff meeting.<br>Il verbale nuovo ha le linguette Partecipanti, Punti trattati e Azioni.</p>
       <button class="btn primary" id="mEmptyNew" type="button">+ Nuovo staff meeting</button>
     </div>
-    <div class="page-col" id="pageCol">
-    <div class="mtabs" id="mtabs" role="tablist" aria-label="Sezioni del verbale" hidden></div>
     <div class="page">
       <div class="page-meta" id="pageMeta"></div>
       <textarea id="sheetText" aria-label="Testo del foglio" placeholder="Scrivi qui con la tastiera o con Apple Pencil…"></textarea>
@@ -1050,76 +1057,82 @@ function placeSnap(src, host, W, H, offX){                  // una copia del fog
   if (src.scr.length){ const all = n.querySelectorAll('*'); for (const [k, v] of src.scr) if (all[k]) all[k].scrollTop = v; }
   return n;
 }
+/* 1.20 — giro di pagina dall'angolo in basso, sulla piega centrale dell'agenda.
+   L'angolo esterno in basso viene preso e portato dall'altra parte del centro lungo un arco:
+   la piega è l'asse tra l'angolo e il punto in cui si trova; la parte oltre la piega si ribalta
+   e mostra il retro (la pagina della nuova settimana), con ombre e luci lungo la piega. */
+function halfPlane(poly, m, n, sign){
+  const f = q => sign * ((q[0] - m[0]) * n[0] + (q[1] - m[1]) * n[1]), out = [];
+  for (let i = 0; i < poly.length; i++){
+    const a = poly[i], b = poly[(i + 1) % poly.length], fa = f(a), fb = f(b);
+    if (fa >= 0) out.push(a);
+    if ((fa >= 0) !== (fb >= 0)){ const t = fa / (fa - fb); out.push([a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t]); }
+  }
+  return out;
+}
+const polyCss = p => p.length > 2 ? `polygon(${p.map(q => q[0].toFixed(1) + 'px ' + q[1].toFixed(1) + 'px').join(',')})` : 'polygon(0 0,0 0,0 0)';
 function pageFlip(dir, update){
   const sheet = document.querySelector('main.sheet');
   if (!sheet || matchMedia('(prefers-reduced-motion: reduce)').matches){ update(); return false; }
   if (flipEnd) flipEnd();
-  const r = sheet.getBoundingClientRect(), W = r.width, H = r.height, half = W / 2;
-  const cs = getComputedStyle(sheet), rad = cs.borderRadius;
+  const r = sheet.getBoundingClientRect(), W = r.width, H = r.height, hw = W / 2;
   const A = snapSheet(sheet);                               // settimana di prima
   const stage = el('div', 'flip-stage');
   Object.assign(stage.style, {left:r.left + 'px', top:r.top + 'px', width:W + 'px', height:H + 'px'});
-  const full = el('div', 'flip-cover'); Object.assign(full.style, {left:0, width:W + 'px', borderRadius:rad});
-  full.append(A.node); Object.assign(A.node.style, {left:0, width:W + 'px', height:H + 'px'});
-  stage.append(full); document.body.append(stage);          // copre il foglio mentre si prepara la nuova settimana
+  const layer = (cls) => { const d = el('div', 'flip-layer' + (cls ? ' ' + cls : '')); return d; };
+  const cover = layer(); placeSnap(A, cover, W, H, 0); stage.append(cover); document.body.append(stage);
   update();
   let raf = 0, tm = 0;
   const done = () => { cancelAnimationFrame(raf); clearTimeout(tm); stage.remove(); flipEnd = null; };
   flipEnd = done;
-  tm = setTimeout(done, 2600);
-  requestAnimationFrame(() => {                             // la nuova settimana è disegnata: costruisco il foglio
+  tm = setTimeout(done, 2200);
+  requestAnimationFrame(() => {
     if (flipEnd !== done) return;
-    const B = snapSheet(sheet);
-    const fwd = dir > 0;
-    // metà ferma: quella che il foglio coprirà alla fine (la vecchia), in attesa
-    const keep = el('div', 'flip-cover');
-    Object.assign(keep.style, fwd ? {left:0, width:half + 'px', borderRadius:`${rad} 0 0 ${rad}`} : {left:half + 'px', width:half + 'px', borderRadius:`0 ${rad} ${rad} 0`});
-    placeSnap(A, keep, W, H, fwd ? 0 : half);
-    const keepShade = el('div', 'flip-shade'); keep.append(keepShade);
-    // ombra portata sulla pagina nuova che si scopre
-    const cast = el('div', 'flip-cast');
-    Object.assign(cast.style, {left:(fwd ? half : 0) + 'px', width:half + 'px',
-      background:`linear-gradient(${fwd ? 90 : 270}deg, rgba(15,18,40,.38), rgba(15,18,40,.08) 55%, rgba(15,18,40,0))`});
-    // il foglio che gira: N strisce incernierate sulla piega centrale
-    const N = 6, sw = half / N, strips = [];
-    let parent = stage;
-    for (let k = 0; k < N; k++){
-      const st = el('div', 'flip-strip');
-      // avanti: la striscia k parte dalla piega e va verso destra; indietro: verso sinistra
-      const x = k === 0 ? (fwd ? half : half - sw) : (fwd ? sw : -sw);
-      Object.assign(st.style, {left:x + 'px', width:sw + 'px', transformOrigin:fwd ? 'left center' : 'right center'});
-      const front = el('div', 'flip-face'), back = el('div', 'flip-face back');
-      // fronte: vecchia pagina nella sua posizione; retro: nuova pagina dall'altra parte della piega
-      const fx = fwd ? half + k * sw : half - (k + 1) * sw;
-      const bx = fwd ? half - (k + 1) * sw : half + k * sw;
-      placeSnap(A, front, W, H, fx); placeSnap(B, back, W, H, bx);
-      const fs = el('div', 'flip-shade'), bs = el('div', 'flip-shade');
-      front.append(fs); back.append(bs);
-      if (k === N - 1){                                     // angoli arrotondati sul bordo libero
-        front.style.borderRadius = fwd ? `0 ${rad} ${rad} 0` : `${rad} 0 0 ${rad}`;
-        back.style.borderRadius = fwd ? `${rad} 0 0 ${rad}` : `0 ${rad} ${rad} 0`;
-      }
-      st.append(front, back); parent.append(st); parent = st;
-      strips.push({st, fs, bs});
-    }
-    stage.replaceChildren(keep, cast, strips[0].st);
-    const D = 1050, t0 = performance.now(), sg = fwd ? -1 : 1;
+    const B = snapSheet(sheet), fwd = dir > 0;
+    const turn = fwd ? [[hw, 0], [W, 0], [W, H], [hw, H]] : [[0, 0], [hw, 0], [hw, H], [0, H]];   // metà che gira
+    const still = fwd ? [[0, 0], [hw, 0], [hw, H], [0, H]] : [[hw, 0], [W, 0], [W, H], [hw, H]];
+    const keep = layer(); placeSnap(A, keep, W, H, 0); keep.style.clipPath = polyCss(still);
+    const under = layer('flip-fx'); const underBand = el('div', 'flip-band'); under.append(underBand);
+    const front = layer(); placeSnap(A, front, W, H, 0);
+    const frontFx = layer('flip-fx'); const frontBand = el('div', 'flip-band'); frontFx.append(frontBand);
+    const flapWrap = layer('flip-flap'); const flap = layer(); placeSnap(B, flap, W, H, 0); flapWrap.append(flap);
+    const flapFx = layer('flip-fx'); const flapBand = el('div', 'flip-band'); flapFx.append(flapBand);
+    stage.replaceChildren(keep, under, front, frontFx, flapWrap, flapFx);
+    const C = fwd ? [W, H] : [0, H], Sb = [hw, H], St = [hw, 0], D = Math.hypot(hw, H);
+    const setBand = (bd, m, ang, len, grad) => {
+      Object.assign(bd.style, {left:m[0] + 'px', top:(m[1] - 2 * H) + 'px', width:Math.max(1, len) + 'px', height:4 * H + 'px',
+        transform:`rotate(${ang}rad)`, background:grad});
+    };
+    const DUR = 800, t0 = performance.now();
     const ease = t => t < .5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
     const frame = now => {
-      const t = Math.min(1, (now - t0) / D), e = ease(t);
-      const base = 180 * e, bend = Math.sin(Math.PI * Math.min(1, t * 1.05)) * 46;   // la piega è massima a metà corsa
-      let tot = 0;
-      strips.forEach((s, k) => {
-        // la prima striscia porta la rotazione, le altre aggiungono curvatura verso il bordo libero
-        const a = k === 0 ? Math.max(0, base - bend * .55) : bend * (k / (N - 1)) * .38;
-        s.st.style.transform = `rotateY(${sg * a}deg)`;
-        tot += a;
-        const lit = Math.cos(tot * Math.PI / 180);          // luce: più scuro quando la carta è di taglio
-        s.fs.style.opacity = Math.max(0, (1 - Math.max(0, lit)) * .45).toFixed(3);
-        s.bs.style.opacity = Math.max(0, (1 + Math.min(0, lit)) * .32).toFixed(3);
-      });
-      cast.style.opacity = (Math.sin(Math.PI * t) * .9 + (1 - t) * .2).toFixed(3);
-      keepShade.style.opacity = (Math.max(0, e - .5) * .35).toFixed(3);
+      const t = Math.min(1, (now - t0) / DUR), e = ease(t), th = Math.PI * e;
+      // l'angolo in basso percorre un arco attorno al piede della piega centrale
+      let P = [Sb[0] + (fwd ? 1 : -1) * hw * Math.cos(th), Sb[1] - hw * .62 * Math.sin(th)];
+      const dt = Math.hypot(P[0] - St[0], P[1] - St[1]);                // la pagina resta attaccata anche in alto
+      if (dt > D){ P = [St[0] + (P[0] - St[0]) * D / dt, St[1] + (P[1] - St[1]) * D / dt]; }
+      const dx = C[0] - P[0], dy = C[1] - P[1], dl = Math.hypot(dx, dy);
+      if (dl < .5){ raf = requestAnimationFrame(frame); return; }
+      const n = [dx / dl, dy / dl], m = [(C[0] + P[0]) / 2, (C[1] + P[1]) / 2], ang = Math.atan2(n[1], n[0]);
+      const beyond = halfPlane(turn, m, n, 1), stay = halfPlane(turn, m, n, -1);
+      const refl = q => { const k = 2 * ((q[0] - m[0]) * n[0] + (q[1] - m[1]) * n[1]); return [q[0] - k * n[0], q[1] - k * n[1]]; };
+      const flapPoly = beyond.map(refl);
+      front.style.clipPath = polyCss(stay);
+      under.style.clipPath = polyCss(beyond);
+      frontFx.style.clipPath = polyCss(stay);
+      flapFx.style.clipPath = polyCss(flapPoly);
+      // retro: nuova pagina, ribaltata sulla piega centrale e poi sulla piega del foglio
+      const M00 = 1 - 2 * n[0] * n[0], M01 = -2 * n[0] * n[1], M11 = 1 - 2 * n[1] * n[1], md = 2 * (m[0] * n[0] + m[1] * n[1]);
+      flapWrap.style.transform = `matrix(${-M00},${-M01},${M01},${M11},${M00 * W + md * n[0]},${M01 * W + md * n[1]})`;
+      flap.style.clipPath = polyCss(beyond.map(q => [W - q[0], q[1]]));
+      const fl = dl / 2, open = Math.sin(Math.PI * e);
+      // ombra sulla pagina nuova vicino alla piega
+      setBand(underBand, m, ang, Math.min(140, fl * .9 + 30), `linear-gradient(90deg, rgba(10,12,30,${(.42 * open + .08).toFixed(3)}), rgba(10,12,30,0))`);
+      // la pagina che resta si incurva: leggera ombra prima della piega
+      setBand(frontBand, m, ang + Math.PI, Math.min(90, fl * .5 + 16), `linear-gradient(90deg, rgba(10,12,30,${(.22 * open + .04).toFixed(3)}), rgba(10,12,30,0))`);
+      // risvolto: piega scura, riflesso chiaro, poi ombra verso il bordo
+      setBand(flapBand, m, ang + Math.PI, fl + 4, `linear-gradient(90deg, rgba(10,12,30,.28) 0, rgba(10,12,30,.08) 6%, rgba(255,255,255,.34) 22%, rgba(255,255,255,0) 48%, rgba(10,12,30,.12) 100%)`);
+      flapWrap.style.filter = `drop-shadow(0 0 ${(14 * open + 2).toFixed(1)}px rgba(10,12,30,${(.38 * open + .06).toFixed(3)}))`;
       if (t < 1) raf = requestAnimationFrame(frame); else done();
     };
     raf = requestAnimationFrame(frame);
@@ -1486,7 +1499,16 @@ const MTABS = [{k:'p', name:'Partecipanti', hint:'Scrivi qui i partecipanti, con
                {k:'t', name:'Punti trattati', hint:'Scrivi qui i punti trattati…'},
                {k:'a', name:'Azioni', hint:'Una azione per riga (chi · cosa · entro). Con “Azioni → punti” vanno nei punti della settimana.'}];
 const TAB_DEF = {p:'#2f6fd0', t:'#2f9e6b', a:'#d9822b'};
-const TAB_SWATCH = ['#2f6fd0','#0e7c86','#2f9e6b','#7a9a1e','#d9a21b','#d9822b','#c2414b','#b83280','#7b4bbd','#5b6475'];
+const TAB_SWATCH = ['#24318f','#2f6fd0','#0e7c86','#2f9e6b','#7a9a1e','#d9a21b','#d9822b','#c2414b','#b83280','#7b4bbd','#5b6475'];
+const BOOK_DEF = ['#7b4bbd','#c2414b','#2f9e6b','#d9822b','#b83280','#5b6475','#7a9a1e'];
+function bookColor(b){
+  if (!b) return '#24318f';
+  if (b.color) return b.color;
+  if (b.id === BOOK_NOTE) return '#24318f';
+  if (b.id === BOOK_STAFF) return '#0e7c86';
+  const others = (data.books || []).filter(x => x.id !== BOOK_NOTE && x.id !== BOOK_STAFF);
+  return BOOK_DEF[Math.max(0, others.indexOf(b)) % BOOK_DEF.length];
+}
 const tabColor = k => ((data.prefs || {}).tabColors || {})[k] || TAB_DEF[k];
 const onColor = hex => { const v = parseInt(hex.slice(1), 16), r = v >> 16, g = v >> 8 & 255, b = v & 255; return (r * .299 + g * .587 + b * .114) > 170 ? '#1b1e2b' : '#ffffff'; };
 function inkKeyOf(n){ return n && n.tabs ? `n:${n.id}:${n.tab || 'p'}` : 'n:' + (n || {}).id; }
@@ -1531,7 +1553,7 @@ function renderMTabs(cur){
   const col = $('pageCol'), bar = $('mtabs'), on = !!(cur && cur.tabs);
   bar.hidden = !on; col.classList.toggle('tabbed', on);
   $('sheetText').placeholder = on ? (MTABS.find(T => T.k === cur.tab) || MTABS[0]).hint : 'Scrivi qui con la tastiera o con Apple Pencil…';
-  if (!on){ col.style.removeProperty('--tabc'); return; }
+  if (!on){ col.style.setProperty('--tabc', bookColor(curBook())); return; }
   col.style.setProperty('--tabc', tabColor(cur.tab));
   const acts = actionsOf(cur).length;
   bar.replaceChildren(...MTABS.map(T => {
@@ -1541,25 +1563,25 @@ function renderMTabs(cur){
     if (T.k === 'a' && acts) b.append(el('span', 'cnt', String(acts)));
     b.onclick = () => { if (cur.tab === T.k) return; setTab(cur, T.k); save(); renderNotes(); if (mode !== 'ink') $('sheetText').focus({preventScroll:true}); };
     return b;
-  }), (() => {
-    const c = el('button', 'mtab-col'); c.type = 'button'; c.setAttribute('aria-label', 'Scegli i colori delle linguette');
-    c.append(...MTABS.map(T => { const i = el('i'); i.style.background = tabColor(T.k); return i; }), 'Colori');
-    c.onclick = e => { e.stopPropagation(); openTabColors(c); };
-    return c;
-  })());
+  }));
 }
 const tabColors = el('div'); tabColors.id = 'tabColors'; tabColors.hidden = true; document.body.append(tabColors);
 function openTabColors(btn){
-  const draw = () => tabColors.replaceChildren(el('div', 'nm-h', 'Colore delle linguette'), ...MTABS.map(T => {
-    const row = el('div', 'tc-row'); row.append(el('span', null, T.name));
+  const swRow = (name, curC, set) => {
+    const row = el('div', 'tc-row'); row.append(el('span', null, name));
     for (const c of TAB_SWATCH){
-      const s = el('button', 'sw'); s.type = 'button'; s.style.background = c; s.setAttribute('aria-label', `${T.name}: colore ${c}`);
-      s.setAttribute('aria-pressed', tabColor(T.k) === c);
-      s.onclick = () => { const pr = (data.prefs ||= {cal:true, alarm:'15', alarmDay:'same8'}); (pr.tabColors ||= {})[T.k] = c; save(); draw(); renderMTabs(data.notes[data.noteIdx]); };
+      const s = el('button', 'sw'); s.type = 'button'; s.style.background = c; s.setAttribute('aria-label', `${name}: colore ${c}`);
+      s.setAttribute('aria-pressed', curC === c);
+      s.onclick = () => { set(c); save(); renderNotes(); draw(); };
       row.append(s);
     }
     return row;
-  }));
+  };
+  const draw = () => tabColors.replaceChildren(
+    el('div', 'tc-h', 'Quaderni'),
+    ...data.books.map(b => swRow(b.name, bookColor(b), c => { b.color = c; })),
+    el('div', 'tc-h', 'Linguette del verbale'),
+    ...MTABS.map(T => swRow(T.name, tabColor(T.k), c => { const pr = (data.prefs ||= {cal:true, alarm:'15', alarmDay:'same8'}); (pr.tabColors ||= {})[T.k] = c; })));
   draw(); tabColors.hidden = false;
   const r = btn.getBoundingClientRect(), w = tabColors.offsetWidth;
   tabColors.style.left = Math.max(8, Math.min(innerWidth - w - 8, r.right - w)) + 'px';
@@ -1582,12 +1604,21 @@ function renderNotes(){
 
   // linguette dei quaderni
   $('books').replaceChildren(...data.books.map(b => {
-    const x = el('button', 'book', b.name); x.type = 'button';
-    x.setAttribute('aria-current', b.id === book.id);
-    x.onclick = () => { data.book = b.id; data.noteIdx = -1; $('newBook').hidden = true; save(); renderNotes(); };
+    const x = el('button', 'book', b.name); x.type = 'button'; x.setAttribute('role', 'tab');
+    x.setAttribute('aria-current', b.id === book.id); x.dataset.id = b.id;
+    x.style.setProperty('--c', bookColor(b)); x.style.setProperty('--on', onColor(bookColor(b)));
+    x.onclick = () => { if (b.id === book.id) return; data.book = b.id; data.noteIdx = -1; $('newBook').hidden = true; save(); renderNotes(); };
     return x;
   }), (() => { const a = el('button', 'book add', '+ Quaderno'); a.type = 'button';
-    a.onclick = () => { $('newBook').hidden = false; $('newBookName').value = ''; $('newBookName').focus(); }; return a; })());
+    a.onclick = () => { $('newBook').hidden = false; $('newBookName').value = ''; $('newBookName').focus(); }; return a; })(),
+  (() => {
+    const c = el('button', 'mtab-col'); c.type = 'button'; c.setAttribute('aria-label', 'Scegli i colori delle linguette');
+    c.append(...data.books.slice(0, 4).map(b => { const i = el('i'); i.style.background = bookColor(b); return i; }), 'Colori');
+    c.onclick = e => { e.stopPropagation(); openTabColors(c); };
+    return c;
+  })());
+  $('pageCol').style.setProperty('--bookc', bookColor(book));
+  $('pageCol').style.setProperty('--tabc', bookColor(book));
 
   $('notes').classList.toggle('is-meeting', !!book.meeting);
   renderSheetPaste();
