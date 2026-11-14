@@ -66,11 +66,19 @@ button{font:inherit;color:inherit;cursor:pointer}
 button:focus-visible,textarea:focus-visible,input:focus-visible{outline:2px solid var(--ink);outline-offset:2px}
 textarea,input{font:inherit;font-size:16px;color:var(--text)}
 
-.app{height:100%;display:grid;grid-template-rows:auto 1fr;gap:12px;padding-top:12px;padding-bottom:76px}
+.app{height:100%;display:grid;grid-template-rows:auto 1fr;gap:8px;padding-top:8px;padding-bottom:76px}
 
 /* ---------- Barra superiore ---------- */
 .topbar{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
-.today-title{font-family:var(--f-display);font-size:26px;font-weight:400;letter-spacing:-.01em;margin:0;line-height:1.1}
+.today-title{font-family:var(--f-display);font-size:23px;font-weight:400;letter-spacing:-.01em;margin:0;line-height:1.1}
+/* 1.21 — barra superiore sottile: tutto su una riga, comandi compatti */
+.topbar{min-height:38px;flex-wrap:nowrap;padding:0 2px}
+.topbar .icon-btn{width:34px;height:34px}
+.topbar .ghost{height:34px;padding:0 12px}
+.topbar .daybanner{border-radius:10px;padding:2px 2px 2px 10px}
+.topbar .daybanner .btn{min-height:30px;height:30px;padding:0 12px;font-size:13px}
+.topbar .daybanner .icon-btn{width:30px;height:30px}
+.today-title{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
 .today-title em{color:var(--ink)}
 .weeknav{display:flex;align-items:center;gap:4px;margin-left:8px}
 .icon-btn{width:38px;height:38px;border-radius:10px;border:1px solid var(--rule);background:var(--surface);display:grid;place-items:center;font-size:18px}
@@ -108,6 +116,12 @@ textarea,input{font:inherit;font-size:16px;color:var(--text)}
 .dow{font-family:var(--f-display);font-size:19px;line-height:1.1;color:var(--ink);font-weight:500}
 .dnum{font-family:var(--f-mono);font-size:12px;width:24px;height:24px;border-radius:50%;display:grid;place-items:center;font-variant-numeric:tabular-nums;color:var(--muted)}
 .day.is-today .dnum{background:var(--ink);color:var(--surface)}
+/* 1.21 — oggi più evidente: barra laterale e linea dell'ora attuale tra gli eventi */
+.day.is-today{box-shadow:inset 5px 0 0 #c2414b}
+.day.is-today .dow{color:#c2414b;font-weight:700}
+.nowline{flex:1 1 100%;position:relative;height:2px;margin:3px 0 3px 6px;background:#c2414b;border-radius:1px;pointer-events:none}
+.nowline::before{content:'';position:absolute;left:-6px;top:-3px;width:8px;height:8px;border-radius:50%;background:#c2414b}
+.nowline span{position:absolute;right:0;top:-12px;font:700 9px/1 var(--f-body);color:#c2414b;background:var(--surface);padding:0 2px;border-radius:3px}
 .day-body{min-width:0;min-height:0;overflow-y:auto;padding:8px 10px 8px 0;display:flex;flex-direction:column;gap:6px;-webkit-overflow-scrolling:touch}
 /* Colonna Eventi: solo orario e colore del tipo; il tocco apre la scheda completa.
    Più eventi ci sono nel giorno, più le etichette si fanno piccole e si affiancano. */
@@ -185,7 +199,15 @@ textarea,input{font:inherit;font-size:16px;color:var(--text)}
 .flip-snap{position:absolute;top:0;margin:0!important;animation:none!important}
 .flip-snap *{animation:none!important;transition:none!important}
 /* 1.18 — trattino a sinistra del numero quando il punto è copiato in un giorno */
-.num.has-copy::before{content:'';position:absolute;left:-10px;top:50%;width:8px;height:2px;margin-top:-1px;border-radius:1px;background:var(--ink)}
+.num .dash{display:none;position:absolute;left:-11px;top:50%;width:8px;height:2px;margin-top:-1px;border-radius:1px;background:var(--ink);pointer-events:none}
+.num.has-copy .dash{display:block}
+/* 1.21 — area di tocco di almeno 44 pixel attorno ai numeri, senza ingrandire il cerchio */
+.num::before{content:'';position:absolute;inset:-7px -6px -7px -8px;border-radius:50%}
+.mark::before{content:'';position:absolute;inset:-8px;border-radius:50%}
+/* 1.21 — punto riportato da più settimane */
+.num .cn{position:absolute;right:-9px;bottom:-7px;min-width:19px;height:15px;padding:0 3px;border-radius:8px;background:var(--surface);border:1px solid #c2414b;color:#c2414b;
+  font:700 9.5px/13px var(--f-body);text-align:center;pointer-events:none;letter-spacing:-.02em;white-space:nowrap}
+.num.st-done .cn{display:none}
 .points{flex:1;min-height:0;overflow-y:auto;list-style:none;margin:0;padding:4px 16px 16px;-webkit-overflow-scrolling:touch}
 .point{display:grid;grid-template-columns:36px minmax(0,1fr);gap:10px;align-items:start;border-bottom:1px solid var(--rule);padding:6px 0}
 .num{width:30px;height:30px;border-radius:50%;border:1.5px solid var(--ink);background:none;color:var(--ink);font-family:var(--f-mono);font-size:13px;font-variant-numeric:tabular-nums;display:grid;place-items:center;margin-top:1px}
@@ -367,7 +389,7 @@ body[data-mode="scribble"] .point textarea,body[data-mode="scribble"] .memo{box-
 body:has(#inkPanel:not([hidden])) .app{padding-bottom:136px}
 body:has(#inkPanel:not([hidden])) .notes{padding-bottom:calc(136px + env(safe-area-inset-bottom,0px))}
 .dock{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(12px + env(safe-area-inset-bottom,0px));z-index:70;display:flex;flex-direction:column;align-items:center;gap:8px;width:max-content;max-width:calc(100% - 32px)}
-#eventOverlay:not([hidden]) ~ .dock,#menuOverlay:not([hidden]) ~ .dock,#actOverlay:not([hidden]) ~ .dock,#expOverlay:not([hidden]) ~ .dock,#ordOverlay:not([hidden]) ~ .dock{visibility:hidden;pointer-events:none}
+#eventOverlay:not([hidden]) ~ .dock,#menuOverlay:not([hidden]) ~ .dock,#actOverlay:not([hidden]) ~ .dock,#expOverlay:not([hidden]) ~ .dock,#ordOverlay:not([hidden]) ~ .dock,#trashOverlay:not([hidden]) ~ .dock{visibility:hidden;pointer-events:none}
 .modes{display:flex;flex-wrap:wrap;justify-content:center;gap:4px;background:var(--surface);border:1px solid var(--rule);border-radius:14px;padding:4px;box-shadow:var(--shadow)}
 .dockrow{display:flex;align-items:center;justify-content:center;gap:8px;flex-wrap:wrap}
 .acts{display:flex;gap:4px;background:var(--surface);border:1px solid var(--rule);border-radius:14px;padding:4px;box-shadow:var(--shadow)}
@@ -410,6 +432,14 @@ body:has(#inkPanel:not([hidden])) .notes{padding-bottom:calc(136px + env(safe-ar
 @media (max-height:680px) and (min-width:701px){
   .cal-grid{grid-auto-rows:17px}
   .cal-head .icon-btn{width:26px;height:26px}
+}
+/* 1.21 — iPad in verticale: giorni sopra (larghi), punti sotto */
+@media (orientation:portrait) and (min-width:701px){
+  .sheet{grid-template-columns:minmax(0,1fr);grid-template-rows:minmax(0,60fr) minmax(0,40fr)}
+  .left{border-right:0;border-bottom:2px solid var(--ink)}
+  .day{--evw:clamp(120px,26%,240px)}
+  .bottom{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}
+  .cal-grid{grid-auto-rows:minmax(15px,1fr)}
 }
 @media (max-width:700px){
   body{height:auto}
@@ -562,7 +592,7 @@ body:has(#inkPanel:not([hidden])) .notes{padding-bottom:calc(136px + env(safe-ar
       </div>
     </div>
     <p class="err" id="bkErr" hidden></p>
-    <div class="actions"><span class="ver" style="margin-right:auto;align-self:center">Agenda 1.20</span><button class="btn" id="appUpdate">Aggiorna app</button><button class="btn" id="menuClose">Chiudi</button></div>
+    <div class="actions"><span class="ver" style="margin-right:auto;align-self:center">Agenda 1.21</span><button class="btn" id="appUpdate">Aggiorna app</button><button class="btn" id="menuClose">Chiudi</button></div>
   </div>
 </div>
 
@@ -587,6 +617,16 @@ body:has(#inkPanel:not([hidden])) .notes{padding-bottom:calc(136px + env(safe-ar
     <div class="field"><span class="lbl">Quaderni</span><div class="ord-list" id="ordBooks"></div></div>
     <div class="field"><span class="lbl" id="ordSheetsLbl">Fogli</span><div class="ord-list" id="ordSheets"></div><p class="bk-text" id="ordHint" hidden></p></div>
     <div class="actions"><button type="button" class="btn primary" id="ordClose">Fatto</button></div>
+  </div>
+</div>
+
+<!-- CESTINO DEI FOGLI -->
+<div class="overlay" id="trashOverlay" hidden>
+  <div class="modal" role="dialog" aria-labelledby="trashTitle">
+    <h3 id="trashTitle">Cestino</h3>
+    <p class="bk-text">I fogli e i verbali eliminati restano qui per 30 giorni, poi vengono cancellati.</p>
+    <div class="ord-list" id="trashList"></div>
+    <div class="actions"><button type="button" class="btn" id="trashEmpty">Svuota cestino</button><button type="button" class="btn primary" id="trashClose">Fatto</button></div>
   </div>
 </div>
 
@@ -709,6 +749,7 @@ body:has(#inkPanel:not([hidden])) .notes{padding-bottom:calc(136px + env(safe-ar
           <button class="pop-i" id="sheetCut" role="menuitem">Taglia foglio</button>
           <button class="pop-i" id="sheetCopy" role="menuitem">Copia foglio</button>
           <button class="pop-i" id="sheetOrder" role="menuitem">Ordina quaderni…</button>
+          <button class="pop-i" id="openTrash" role="menuitem">Cestino</button>
           <button class="pop-i danger" id="delSheet" role="menuitem">Elimina foglio</button>
         </div>
       </div>
@@ -873,6 +914,16 @@ function renderHeader(){
 }
 
 /* ---------- Settimana (parte sinistra) ---------- */
+function placeNowLine(col){
+  col.querySelector('.nowline')?.remove();
+  const timed = [...col.querySelectorAll('.evp[data-tm]')];
+  if (!timed.length) return;
+  const d = new Date(), now = String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0');
+  const line = el('div', 'nowline'); line.append(el('span', null, now)); line.setAttribute('aria-hidden', 'true');
+  const next = timed.find(b => b.dataset.tm > now);
+  next ? col.insertBefore(line, next) : col.append(line);
+}
+setInterval(() => { const c = document.querySelector('.day.is-today .evcol'); if (c) placeNowLine(c); }, 30000);
 function dayRow(d, i){
   const k = keyOf(d);
   const sec = el('section','day');
@@ -900,11 +951,13 @@ function dayRow(d, i){
     b.append(el('span', 'ty f', ev.type), el('span', 'ty s', sh), el('span', 'ty c', cd));
     b.type = 'button';
     b.style.setProperty('--c', typeColor(ev.type));
+    if (!ev.allDay) b.dataset.tm = ev.time;
     const label = `${typeName(ev.type)}${ev.allDay ? ', tutto il giorno' : ' alle ' + ev.time}${ev.desc ? ': ' + ev.desc : ''}${ev.calAt ? ' (nel Calendario)' : ''}`;
     b.title = label; b.setAttribute('aria-label', label);
     b.onclick = e => { e.stopPropagation(); openEvent(ev); };
     evcol.append(b);
   }
+  if (k === keyOf(today)) placeNowLine(evcol);
   // toccando lo spazio vuoto della colonna si crea un evento in quel giorno
   evcol.onclick = e => { if (e.target === evcol || e.target.classList.contains('evcol-h')){ selectDay(k); openEvent(); } };
   evcol.setAttribute('aria-label', `Eventi di ${fmt(d,{weekday:'long',day:'numeric'})}: ${evs.length || 'nessuno'}`);
@@ -1019,6 +1072,7 @@ function carryPrev(){
     if ((pd.extra || {})[i]) (dd.extra ||= {})[j] = pd.extra[i];
     if ((pd.fit || {})[i]) (dd.fit ||= {})[j] = 1;
     if (pst[i] === 'prio') st[j] = 'prio';
+    (dd.carry ||= {})[j] = ((pd.carry || {})[i] || 0) + 1;     // da quante settimane il punto viene riportato
     for (const s0 of pInk) if (s0.r === i) add.push({t:s0.t, c:s0.c, w:s0.w, r:j, pts:s0.pts.map(q => q.slice())});
     dd.carried.push(prev + ':' + i); rows.push(j + 1); j++;
   }
@@ -1293,6 +1347,9 @@ function pointRow(dd, i){
   n.addEventListener('pointerdown', e => numDown(e, n, {wk:ptsWeek, row:i}));
   n.addEventListener('click', e => e.preventDefault());
   li.dataset.pt = ptsWeek + ':' + i;
+  n.append(el('span', 'dash'));
+  const cn = (dd.carry || {})[i];
+  if (cn){ const c = el('span', 'cn', '↩' + cn); n.append(c); n.setAttribute('aria-label', n.getAttribute('aria-label') + `. Riportato da ${cn} ${cn === 1 ? 'settimana' : 'settimane'}`); n.title = `Riportato da ${cn} ${cn === 1 ? 'settimana' : 'settimane'}`; }
   const ta = el('textarea');
   ta.dataset.ref = 'pt:' + ptsWeek + ':' + i;
   ta.rows = 1; ta.value = dd.list[i];
@@ -1304,7 +1361,9 @@ function pointRow(dd, i){
   });
   ta.setAttribute('aria-label', `Punto ${i+1}`);
   // Invio = nuova riga nello stesso punto; l'area cresce e spinge giù i successivi
-  ta.oninput = () => { dd.list[i] = ta.value; fitPoint(ta, dd, i); pointsInk.size(); save(); };
+  ta.oninput = () => { dd.list[i] = ta.value; fitPoint(ta, dd, i); pointsInk.size();
+    if (!ta.value.trim() && (dd.carry || {})[i] && !(data.ink['pw:' + ptsWeek] || []).some(st => st.r === i)){ delete dd.carry[i]; n.querySelector('.cn')?.remove(); n.removeAttribute('title'); }
+    save(); };
   li.append(n, ta);
   applyStatus(li, ptsWeek, i);
   return li;
@@ -1632,6 +1691,7 @@ function renderNotes(){
   $('prevSheet').disabled = pos <= 0;
   $('nextSheet').disabled = pos < 0 || pos === list.length - 1;
   $('delSheet').disabled = $('sheetCut').disabled = $('sheetCopy').disabled = !has;
+  purgeTrash(); $('openTrash').textContent = data.trash.length ? `Cestino (${data.trash.length})` : 'Cestino';
   $('sheetMenuBtn').disabled = !has;
   $('delSheet').classList.remove('armed');
   $('delSheet').textContent = book.meeting ? 'Elimina verbale' : 'Elimina foglio';
@@ -1769,9 +1829,11 @@ $('delSheet').onclick = () => {
   const b = $('delSheet'), cur = data.notes[data.noteIdx]; if (!cur) return;
   if (!b.classList.contains('armed')){ b.classList.add('armed'); b.textContent = 'Tocca di nuovo per eliminare'; return; }
   closeSheetMenu(); if (sheetClip && sheetClip.id === cur.id) sheetClip = null;
-  for (const k of allInkKeys(cur)) delete data.ink[k];
+  const ink = {};
+  for (const k of allInkKeys(cur)){ if (data.ink[k]) ink[k] = data.ink[k]; delete data.ink[k]; }
+  (data.trash ||= []).unshift({note:cur, ink, at:Date.now()});            // va nel cestino per 30 giorni
   data.notes.splice(data.noteIdx, 1); data.noteIdx = -1; data.bookPos[data.book] = null;
-  save(); renderNotes(); toast(curBook().meeting ? 'Verbale eliminato' : 'Foglio eliminato');
+  save(); renderNotes(); toast(curBook().meeting ? 'Verbale spostato nel cestino' : 'Foglio spostato nel cestino');
 };
 // nuovo quaderno
 $('newBookOk').onclick = () => {
@@ -1964,6 +2026,45 @@ function renderOrder(){
   $('ordHint').hidden = false;
   $('ordHint').textContent = 'Per cambiare l’ordine dei fogli trascina il simbolo ≡ nell’elenco a sinistra.';
 }
+/* ===== 1.21 — Cestino ===== */
+const TRASH_DAYS = 30;
+function purgeTrash(){
+  const lim = Date.now() - TRASH_DAYS * 864e5, before = (data.trash || []).length;
+  data.trash = (data.trash || []).filter(t => t.at > lim);
+  if (data.trash.length !== before) save();
+}
+function renderTrash(){
+  purgeTrash();
+  const list = $('trashList');
+  if (!data.trash.length){ list.replaceChildren(el('p', 'bk-text', 'Il cestino è vuoto.')); $('trashEmpty').disabled = true; return; }
+  $('trashEmpty').disabled = false;
+  list.replaceChildren(...data.trash.map((t, i) => {
+    const row = el('div', 'ord-row'), n = t.note, bk = data.books.find(b => b.id === n.book);
+    const left = Math.max(1, Math.ceil((t.at + TRASH_DAYS * 864e5 - Date.now()) / 864e5));
+    const tx = el('span'); tx.append(el('strong', null, sheetTitle(n)), document.createTextNode(` · ${bk ? bk.name : 'Note'} · ancora ${left} ${left === 1 ? 'giorno' : 'giorni'}`));
+    const res = el('button', 'btn', 'Ripristina'); res.type = 'button';
+    res.onclick = () => {
+      data.trash.splice(i, 1);
+      if (!data.books.some(b => b.id === n.book)) n.book = BOOK_NOTE;
+      Object.assign(data.ink, t.ink || {});
+      data.notes.push(n); data.book = n.book; data.noteIdx = data.notes.length - 1;
+      save(); renderTrash(); renderNotes(); toast('Foglio ripristinato');
+    };
+    const del = el('button', 'icon-btn', '×'); del.type = 'button'; del.setAttribute('aria-label', 'Elimina definitivamente');
+    del.onclick = () => {
+      if (!del.classList.contains('armed')){ del.classList.add('armed'); del.textContent = 'Sicuro?'; del.style.width = 'auto'; del.style.padding = '0 10px'; return; }
+      data.trash.splice(i, 1); save(); renderTrash();
+    };
+    row.append(tx, res, del); return row;
+  }));
+}
+$('openTrash').onclick = () => { closeSheetMenu(); renderTrash(); $('trashOverlay').hidden = false; };
+$('trashClose').onclick = () => { $('trashOverlay').hidden = true; };
+$('trashEmpty').onclick = () => {
+  const b = $('trashEmpty');
+  if (!b.classList.contains('armed')){ b.classList.add('armed'); b.textContent = 'Tocca di nuovo per svuotare'; return; }
+  b.classList.remove('armed'); b.textContent = 'Svuota cestino'; data.trash = []; save(); renderTrash();
+};
 $('sheetOrder').onclick = () => { closeSheetMenu(); renderOrder(); $('ordOverlay').hidden = false; };
 $('ordClose').onclick = () => { $('ordOverlay').hidden = true; };
 
@@ -2210,6 +2311,11 @@ function agendaPages(onlyPoints){
       const nx = num.offsetLeft + num.offsetWidth / 2, ny = num.offsetTop + num.offsetHeight / 2;
       drawNumBadge(ctx, nx, ny, num.offsetWidth / 2 - 1, i + 1, pst, 13); ctx.textBaseline = 'middle';
       if (marksOf(ptsWeek, i).length){ ctx.fillStyle = '#24318f'; ctx.fillRect(nx - num.offsetWidth / 2 - 10, ny - 1, 8, 2); }
+      const cnN = (dd.carry || {})[i];
+      if (cnN && pst !== 'done'){ ctx.save(); ctx.font = '700 9.5px Selawik, "Segoe UI", -apple-system, system-ui, sans-serif'; ctx.textAlign = 'center';
+        const tx = '↩' + cnN, bw = Math.max(19, ctx.measureText(tx).width + 6), bx = nx + num.offsetWidth / 2 + 9 - bw, by = ny + num.offsetHeight / 2 - 8;
+        ctx.fillStyle = '#ffffff'; ctx.strokeStyle = '#c2414b'; ctx.lineWidth = 1; ctx.beginPath(); ctx.roundRect ? ctx.roundRect(bx, by, bw, 15, 7.5) : ctx.rect(bx, by, bw, 15); ctx.fill(); ctx.stroke();
+        ctx.fillStyle = '#c2414b'; ctx.textBaseline = 'middle'; ctx.fillText(tx, bx + bw / 2, by + 8); ctx.restore(); }
       const ta = li.querySelector('textarea');
       if (ta.value){
         const tr = ta.getBoundingClientRect();
