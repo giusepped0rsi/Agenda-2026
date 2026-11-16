@@ -382,6 +382,9 @@ canvas.ink{position:absolute;left:0;top:0;z-index:5;pointer-events:none}
 canvas.ink.live{z-index:6}
 body[data-mode="ink"] .left,body[data-mode="ink"] .points,body[data-mode="ink"] .page{-webkit-user-select:none;user-select:none;-webkit-touch-callout:none;cursor:crosshair}
 body[data-mode="ink"] .point.target{background:var(--sel);border-radius:8px}
+.pen-hover{position:fixed;z-index:95;pointer-events:none;border-radius:50%;transform:translate(-50%,-50%);border:1.5px solid rgba(20,26,70,.55);box-shadow:0 0 0 1.5px rgba(255,255,255,.85);opacity:.9;transition:width .12s,height .12s}
+.pen-hover.hl{opacity:.45;border-radius:3px}
+.pen-hover[hidden]{display:none}
 body[data-mode="scribble"] .point textarea,body[data-mode="scribble"] .memo{box-shadow:inset 3px 0 0 var(--ink-soft);padding-left:8px}
 
 /* ---------- Barra in basso: modalità di scrittura ---------- */
@@ -612,7 +615,7 @@ body:has(#inkPanel:not([hidden])) .notes{padding-bottom:calc(136px + env(safe-ar
       </div>
     </div>
     <p class="err" id="bkErr" hidden></p>
-    <div class="actions"><span class="ver" style="margin-right:auto;align-self:center">Agenda 1.22</span><button class="btn" id="appUpdate">Aggiorna app</button><button class="btn" id="menuClose">Chiudi</button></div>
+    <div class="actions"><span class="ver" style="margin-right:auto;align-self:center">Agenda 1.23</span><button class="btn" id="appUpdate">Aggiorna app</button><button class="btn" id="menuClose">Chiudi</button></div>
   </div>
 </div>
 
@@ -2693,6 +2696,25 @@ function inkAt(t){
   if (t.closest('.left')) return leftInk;
   return null;
 }
+/* ===== 1.23 — anteprima della punta: con iPad che rileva la Pencil sospesa, un cerchio mostra colore e spessore ===== */
+const hoverDot = el('div', 'pen-hover'); hoverDot.hidden = true; hoverDot.setAttribute('aria-hidden', 'true'); document.body.append(hoverDot);
+let hoverT = 0;
+function hideHover(){ hoverDot.hidden = true; clearTimeout(hoverT); }
+window.addEventListener('pointermove', e => {
+  if (e.pointerType !== 'pen' || active || e.buttons || mode === 'scribble'){ if (!hoverDot.hidden && (active || e.buttons)) hideHover(); return; }
+  const o = inkAt(e.target); if (!o){ hideHover(); return; }
+  const k = zk(o), er = tool === 'eraser', ls = tool === 'lasso';
+  const w = (er ? 18 : ls ? 8 : drawTool === 'hl' ? HL_W[level.hl] : PEN_W[level.pen]) * k;
+  const d = Math.max(7, w + 4);
+  Object.assign(hoverDot.style, {width:d + 'px', height:d + 'px', left:e.clientX + 'px', top:e.clientY + 'px',
+    background: er || ls ? 'transparent' : `var(--${drawTool === 'hl' ? 'hl' : 'pen'}-${drawTool === 'hl' ? hlColor : penColor})`,
+    borderStyle: ls ? 'dashed' : 'solid'});
+  hoverDot.classList.toggle('hl', drawTool === 'hl' && !er && !ls);
+  hoverDot.hidden = false;
+  clearTimeout(hoverT); hoverT = setTimeout(hideHover, 900);
+}, {passive:true});
+window.addEventListener('pointerleave', hideHover);
+
 function toPt(e, prev){
   const r = active.rect;
   let raw = active.pen ? e.pressure : 0.5;
@@ -2708,10 +2730,15 @@ document.addEventListener('pointerdown', e => {
     if (o){ e.preventDefault(); e.stopPropagation(); stopPaste(); showGhost(e.clientX, e.clientY, false); return; }
   }
   if (active && e.pointerType !== 'touch' && Date.now() - (active.last || 0) > 800) endStroke({pointerId: active.id});
-  if (mode !== 'ink' || e.pointerType === 'touch' || active) return;
+  if (e.pointerType === 'touch' || active) return;
   if (e.pointerType === 'mouse' && e.button !== 0) return;
+  // Apple Pencil scrive sempre: in "Tastiera" passa da sola a "Solo penna". Solo "Penna → testo" la lascia a Scribble.
+  const pencil = e.pointerType === 'pen';
+  if (mode !== 'ink' && !(pencil && mode === 'kbd')) return;
   const o = inkAt(e.target); if (!o) return;
   e.preventDefault(); e.stopPropagation();
+  hideHover();
+  if (mode !== 'ink'){ setMode('ink', true); toast('Solo penna: scrivi con Apple Pencil · tocca Tastiera per scrivere a tastiera'); }
   if (document.activeElement && document.activeElement !== document.body) document.activeElement.blur();
   o.readTops();
   active = {o, id:e.pointerId, rect:o.c.getBoundingClientRect(), k:zk(o), pen:e.pointerType === 'pen'};
@@ -2785,9 +2812,9 @@ window.addEventListener('lostpointercapture', endStroke, {capture:true});
 // mentre scrivi, il palmo appoggiato non sposta nulla. Le dita restano libere.
 document.addEventListener('touchstart', e => {
   if (penBusy && !active) penBusy = false;           // sicurezza: nessun tratto in corso, il tocco è libero
-  if (mode !== 'ink') return;
+  if (mode === 'scribble') return;                   // Penna → testo: la Pencil resta a Scribble
   const stylus = [...e.changedTouches].some(t => t.touchType === 'stylus');
-  if ((stylus && inkAt(e.target)) || penBusy) e.preventDefault();
+  if ((stylus && inkAt(e.target)) || (penBusy && mode === 'ink')) e.preventDefault();
 }, {passive:false, capture:true});
 document.addEventListener('touchmove', e => {
   if (mode === 'ink' && (penBusy || [...e.touches].some(t => t.touchType === 'stylus'))) e.preventDefault();
@@ -3148,9 +3175,11 @@ $('pasteBtn').onclick = () => startPaste('');
 $('pasteCancel').onclick = stopPaste;
 
 /* ---------- Barra modalità + pannello strumenti ---------- */
-function setMode(m){
+function setMode(m, auto){
   if (m !== 'ink'){ clearSel(); stopPaste(); if (ghost) $('ghostX').click(); }
   mode = m; document.body.dataset.mode = m;
+  try{ localStorage.setItem('agendaIpad.mode', m); }catch(_){}       // la modalità resta alla riapertura
+  if (auto) document.querySelector('.mode[data-mode="ink"]')?.animate?.([{transform:'scale(1.12)'}, {transform:'scale(1)'}], {duration:260, easing:'ease-out'});
   document.querySelectorAll('.mode').forEach(b => b.setAttribute('aria-pressed', b.dataset.mode === m));
   $('inkPanel').hidden = m !== 'ink';
   document.querySelectorAll('.point textarea, .memo, #sheetText').forEach(t => t.readOnly = m === 'ink');
@@ -3199,7 +3228,8 @@ $('inkClear').onclick = () => {
 try { matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => inks.forEach(redraw)); } catch(e){}
 
 setTool('pen', 'nero');
-setMode('kbd');
+{ let m0 = 'kbd'; try{ m0 = localStorage.getItem('agendaIpad.mode') || 'kbd'; }catch(_){}
+  setMode(['kbd', 'scribble', 'ink'].includes(m0) ? m0 : 'kbd'); }
 renderAll();
 
 /* =========================================================
