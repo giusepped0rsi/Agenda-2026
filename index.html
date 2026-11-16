@@ -382,6 +382,8 @@ canvas.ink{position:absolute;left:0;top:0;z-index:5;pointer-events:none}
 canvas.ink.live{z-index:6}
 body[data-mode="ink"] .left,body[data-mode="ink"] .points,body[data-mode="ink"] .page{-webkit-user-select:none;user-select:none;-webkit-touch-callout:none;cursor:crosshair}
 body[data-mode="ink"] .point.target{background:var(--sel);border-radius:8px}
+.pk{height:34px;padding:0 10px;border-radius:9px;border:1px solid var(--rule);background:var(--surface);color:var(--text);font:600 13px var(--f-body)}
+.pk[aria-pressed="true"]{background:var(--ink);border-color:var(--ink);color:var(--surface)}
 .pen-hover{position:fixed;z-index:95;pointer-events:none;border-radius:50%;transform:translate(-50%,-50%);border:1.5px solid rgba(20,26,70,.55);box-shadow:0 0 0 1.5px rgba(255,255,255,.85);opacity:.9;transition:width .12s,height .12s}
 .pen-hover.hl{opacity:.45;border-radius:3px}
 .pen-hover[hidden]{display:none}
@@ -615,7 +617,7 @@ body:has(#inkPanel:not([hidden])) .notes{padding-bottom:calc(136px + env(safe-ar
       </div>
     </div>
     <p class="err" id="bkErr" hidden></p>
-    <div class="actions"><span class="ver" style="margin-right:auto;align-self:center">Agenda 1.24</span><button class="btn" id="appUpdate">Aggiorna app</button><button class="btn" id="menuClose">Chiudi</button></div>
+    <div class="actions"><span class="ver" style="margin-right:auto;align-self:center">Agenda 1.25</span><button class="btn" id="appUpdate">Aggiorna app</button><button class="btn" id="menuClose">Chiudi</button></div>
   </div>
 </div>
 
@@ -727,6 +729,11 @@ body:has(#inkPanel:not([hidden])) .notes{padding-bottom:calc(136px + env(safe-ar
       <button class="sw hl tl" data-tool="hl" data-color="verde"     style="--sw:var(--hl-verde)"     aria-label="Evidenziatore verde"></button>
       <button class="sw hl tl" data-tool="hl" data-color="azzurro"   style="--sw:var(--hl-azzurro)"   aria-label="Evidenziatore azzurro"></button>
       <button class="sw hl tl" data-tool="hl" data-color="arancione" style="--sw:var(--hl-arancione)" aria-label="Evidenziatore arancione"></button>
+    </div>
+    <span class="sep"></span>
+    <div class="grp" role="group" aria-label="Tipo di penna"><span class="lbl">Tratto</span>
+      <button class="pk" data-pk="b" aria-label="Penna a sfera: tratto uniforme e nitido">Sfera</button>
+      <button class="pk" data-pk="f" aria-label="Stilografica: lo spessore segue la pressione">Stilo</button>
     </div>
     <span class="sep"></span>
     <div class="grp" role="group" aria-label="Spessore"><span class="lbl">Spessore</span>
@@ -2541,6 +2548,11 @@ const PEN_W = [1.1, 1.8, 2.8, 4.2, 6.5];      // 5 spessori penna, dal più sott
 const HL_W  = [8, 12, 17, 24, 34];            // 5 spessori evidenziatore
 const HL_ALPHA = 0.4, ERASE_R = 10, POINT_LINE = 28, NOTE_LINES = 3;
 let mode = 'kbd', tool = 'pen', drawTool = 'pen';
+let penKind = 'b'; try{ penKind = localStorage.getItem('agendaIpad.penKind') === 'f' ? 'f' : 'b'; }catch(_){}
+function setPenKind(k){ penKind = k; try{ localStorage.setItem('agendaIpad.penKind', k); }catch(_){}
+  document.querySelectorAll('.pk').forEach(b => b.setAttribute('aria-pressed', b.dataset.pk === k)); }
+document.querySelectorAll('.pk').forEach(b => b.onclick = () => { setPenKind(b.dataset.pk); if (tool !== 'pen'){ setTool('pen', penColor); } });
+setPenKind(penKind);
 let penColor = 'nero', hlColor = 'giallo';     // il nero è SEMPRE il colore iniziale
 const level = {pen:1, hl:2};
 let eraserKind = 'precisa';                    // precisa = cancella solo dove passi; tratto = intero
@@ -2611,16 +2623,18 @@ function paint(ctx, s, dy){
     ctx.stroke(); ctx.globalAlpha = 1; return;
   }
   // penna: forma piena unica (cerchi + raccordi tangenti), spessore continuo che segue la pressione
-  penShape(ctx, p, W, dy);
+  penShape(ctx, p, W, dy, s.k || 'f');
 }
 /* 1.24 — Motore della penna: il tratto è un'unica forma riempita.
    - posizione ammorbidita in modo leggero (1-2-1) e pressione media su 5 campioni: niente tremolii né scalini;
    - tra campioni lontani si aggiungono punti su curva (Catmull-Rom): curve morbide anche se scrivi veloce;
    - ogni punto è un cerchio col suo raggio, unito al successivo dai segmenti tangenti: spessore che varia
      senza gradini e senza "palline" nelle giunzioni. Durante la scrittura e dopo il tratto è identico. */
-function penShape(ctx, p, W, dy){
-  const n = p.length;
-  const rad = v => Math.max(.32, W * (.58 + .84 * Math.min(1, Math.max(0, v))) / 2);
+function penShape(ctx, p, W, dy, kind){
+  const n = p.length, ball = kind === 'b';
+  // sfera: spessore quasi costante (±10%), stilografica: spessore che segue la pressione
+  const rad = ball ? v => Math.max(.4, W * (.9 + .2 * Math.min(1, Math.max(0, v))) / 2)
+                   : v => Math.max(.32, W * (.58 + .84 * Math.min(1, Math.max(0, v))) / 2);
   if (n === 1){ ctx.beginPath(); ctx.arc(p[0][0], p[0][1] + dy, rad(p[0][2] ?? .5), 0, 7); ctx.fill(); return; }
   const P = new Array(n), R = new Array(n);
   for (let i = 0; i < n; i++){
@@ -2636,7 +2650,7 @@ function penShape(ctx, p, W, dy){
     R[i] = rad(sv / sw);
   }
   // punta che si assottiglia appena all'inizio e alla fine (come una vera penna)
-  if (n > 4){ R[0] *= .78; R[1] *= .9; R[n - 1] *= .82; R[n - 2] *= .93; }
+  if (n > 4 && !ball){ R[0] *= .78; R[1] *= .9; R[n - 1] *= .82; R[n - 2] *= .93; }
   // punti intermedi sulla curva
   const X = [], Y = [], Q = [];
   for (let i = 0; i < n - 1; i++){
@@ -2697,15 +2711,24 @@ function redraw(o){
 }
 const draw = redraw;
 function drawIncr(o){
-  // tratto in corso: ridisegnato per intero a ogni movimento, uguale a come resterà; più i punti previsti (meno ritardo)
-  const a = active, st = a.cur, ctx = o.lctx;
-  if (!o.w) return;
-  ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.clearRect(0, 0, o.live.width, o.live.height);
-  ctx.setTransform(o.dpr, 0, 0, o.dpr, 0, 0); ctx.globalAlpha = 1;
-  ctx.fillStyle = a.col || (a.col = colorOf(st));
-  const pts = a.pred && a.pred.length ? st.pts.concat(a.pred) : st.pts;
-  penShape(ctx, pts, st.w || PEN_W[1], 0);
-  a.drawn = st.pts.length;
+  // 1.25 — tratto in corso: una volta per fotogramma, pulendo solo l'area del tratto (non tutto il foglio),
+  // con la stessa forma che resterà alla fine
+  if (o.praf) return;
+  o.praf = requestAnimationFrame(() => {
+    o.praf = 0;
+    const a = active; if (!a || a.o !== o || !a.cur || !o.w) return;
+    const st = a.cur, ctx = o.lctx, pts = st.pts, m = (st.w || PEN_W[1]) * 1.6 + 3;
+    let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity;
+    for (const q of pts){ if (q[0] < x0) x0 = q[0]; if (q[0] > x1) x1 = q[0]; if (q[1] < y0) y0 = q[1]; if (q[1] > y1) y1 = q[1]; }
+    const bb = [x0 - m, y0 - m, x1 + m, y1 + m], pb = a.bb || bb;
+    const cx0 = Math.min(bb[0], pb[0]), cy0 = Math.min(bb[1], pb[1]), cx1 = Math.max(bb[2], pb[2]), cy1 = Math.max(bb[3], pb[3]);
+    a.bb = bb;
+    ctx.setTransform(o.dpr, 0, 0, o.dpr, 0, 0);
+    ctx.clearRect(Math.floor(cx0), Math.floor(cy0), Math.ceil(cx1 - cx0) + 2, Math.ceil(cy1 - cy0) + 2);
+    ctx.globalAlpha = 1; ctx.fillStyle = a.col || (a.col = colorOf(st));
+    penShape(ctx, pts, st.w || PEN_W[1], 0, st.k || 'f');
+    a.drawn = pts.length;
+  });
 }
 function drawLive(o){
   const {lctx, live} = o;
@@ -2801,6 +2824,7 @@ document.addEventListener('pointerdown', e => {
   clearSel();
   active.cur = {t: drawTool, c: drawTool === 'hl' ? hlColor : penColor,
                 w: drawTool === 'hl' ? HL_W[level.hl] : PEN_W[level.pen], pts:[toPt(e)]};
+  if (drawTool !== 'hl') active.cur.k = penKind;
   if (!(e.pressure > 0) && active.pen) active.cur.pts[0][2] = .5;
   active.last = Date.now();
   drawLive(o); active.drawn = 1;
@@ -2819,9 +2843,11 @@ window.addEventListener('pointermove', e => {
     if ((q[0]-prev[0])**2 + (q[1]-prev[1])**2 >= 0.04) pts.push(q);   // scarta solo i tremolii sotto 0,2 px
     else if (q[2] > prev[2]) prev[2] = q[2];                          // ...ma tiene conto della pressione
   }
-  const pr = (e.getPredictedEvents && e.getPredictedEvents()) || [];
-  active.pred = pr.slice(0, 2).map(ev => toPt(ev, pts[pts.length-1]));   // anticipo del movimento (dove l'iPad lo fornisce)
-  if (active.cur.t === 'hl') active.o.scheduleLive();   // evidenziatore: trasparenza uniforme, ridisegno a ogni fotogramma
+  if (active.cur.t === 'hl'){                          // evidenziatore: con un piccolo anticipo del movimento
+    const pr = (e.getPredictedEvents && e.getPredictedEvents()) || [];
+    active.pred = pr.slice(0, 2).map(ev => toPt(ev, pts[pts.length-1]));
+    active.o.scheduleLive();
+  }   // evidenziatore: trasparenza uniforme, ridisegno a ogni fotogramma
   else drawIncr(active.o);                            // penna: il tratto compare subito, nello stesso evento
 }, {capture:true, passive:false});
 function endStroke(e){
@@ -2829,6 +2855,9 @@ function endStroke(e){
   const o = active.o, key = o.getKey();
   if (active.cur){
     const s = active.cur;
+    if (o.praf){ cancelAnimationFrame(o.praf); o.praf = 0; }
+    // quando la Pencil si stacca, gli ultimi campioni quasi senza pressione creano un "uncino": li tolgo
+    if (active.pen && s.t !== 'hl') while (s.pts.length > 3 && s.pts[s.pts.length - 1][2] < .06) s.pts.pop();
     if (o.rows){                                       // il tratto si aggancia al punto della lista
       s.r = o.rowAt(s.pts[0][1]);
       const top = o.tops[s.r] || 0;
