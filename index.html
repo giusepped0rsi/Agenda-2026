@@ -615,7 +615,7 @@ body:has(#inkPanel:not([hidden])) .notes{padding-bottom:calc(136px + env(safe-ar
       </div>
     </div>
     <p class="err" id="bkErr" hidden></p>
-    <div class="actions"><span class="ver" style="margin-right:auto;align-self:center">Agenda 1.23</span><button class="btn" id="appUpdate">Aggiorna app</button><button class="btn" id="menuClose">Chiudi</button></div>
+    <div class="actions"><span class="ver" style="margin-right:auto;align-self:center">Agenda 1.24</span><button class="btn" id="appUpdate">Aggiorna app</button><button class="btn" id="menuClose">Chiudi</button></div>
   </div>
 </div>
 
@@ -2610,18 +2610,73 @@ function paint(ctx, s, dy){
     }
     ctx.stroke(); ctx.globalAlpha = 1; return;
   }
-  // penna: spessore che segue la pressione; segmenti con lo stesso spessore in un solo tracciato
-  const wAt = i => Math.max(0.6, Math.round(W * (0.45 + (p[i][2] ?? 0.5) * 1.1) * 4) / 4);
-  if (p.length === 1){ ctx.beginPath(); ctx.arc(p[0][0], p[0][1]+dy, wAt(0)/2, 0, 7); ctx.fill(); return; }
-  let ax = p[0][0], ay = p[0][1]+dy, cw = -1;
-  for (let i=1; i<p.length; i++){
-    const last = i === p.length-1, w = wAt(i);
-    const bx = last ? p[i][0] : (p[i][0]+p[i+1][0])/2, by = (last ? p[i][1] : (p[i][1]+p[i+1][1])/2) + dy;
-    if (w !== cw){ if (cw > 0) ctx.stroke(); ctx.beginPath(); ctx.lineWidth = w; cw = w; ctx.moveTo(ax, ay); }
-    if (last) ctx.lineTo(bx, by); else ctx.quadraticCurveTo(p[i][0], p[i][1]+dy, bx, by);
-    ax = bx; ay = by;
+  // penna: forma piena unica (cerchi + raccordi tangenti), spessore continuo che segue la pressione
+  penShape(ctx, p, W, dy);
+}
+/* 1.24 — Motore della penna: il tratto è un'unica forma riempita.
+   - posizione ammorbidita in modo leggero (1-2-1) e pressione media su 5 campioni: niente tremolii né scalini;
+   - tra campioni lontani si aggiungono punti su curva (Catmull-Rom): curve morbide anche se scrivi veloce;
+   - ogni punto è un cerchio col suo raggio, unito al successivo dai segmenti tangenti: spessore che varia
+     senza gradini e senza "palline" nelle giunzioni. Durante la scrittura e dopo il tratto è identico. */
+function penShape(ctx, p, W, dy){
+  const n = p.length;
+  const rad = v => Math.max(.32, W * (.58 + .84 * Math.min(1, Math.max(0, v))) / 2);
+  if (n === 1){ ctx.beginPath(); ctx.arc(p[0][0], p[0][1] + dy, rad(p[0][2] ?? .5), 0, 7); ctx.fill(); return; }
+  const P = new Array(n), R = new Array(n);
+  for (let i = 0; i < n; i++){
+    const q = p[i];
+    if (i === 0 || i === n - 1) P[i] = [q[0], q[1] + dy];
+    else {                                               // ammorbidisce solo i campioni fitti: gli angoli veri restano angoli
+      const a = p[i - 1], c = p[i + 1], dd = Math.max(Math.hypot(q[0] - a[0], q[1] - a[1]), Math.hypot(c[0] - q[0], c[1] - q[1]));
+      const f = dd < 2.5 ? 1 : dd < 6 ? (6 - dd) / 3.5 : 0;
+      P[i] = [q[0] + f * ((a[0] + 2 * q[0] + c[0]) / 4 - q[0]), q[1] + f * ((a[1] + 2 * q[1] + c[1]) / 4 - q[1]) + dy];
+    }
+    let sw = 0, sv = 0;
+    for (let k = -2; k <= 2; k++){ const j = i + k; if (j >= 0 && j < n){ const w = 3 - Math.abs(k); sv += (p[j][2] ?? .5) * w; sw += w; } }
+    R[i] = rad(sv / sw);
   }
-  ctx.stroke();
+  // punta che si assottiglia appena all'inizio e alla fine (come una vera penna)
+  if (n > 4){ R[0] *= .78; R[1] *= .9; R[n - 1] *= .82; R[n - 2] *= .93; }
+  // punti intermedi sulla curva
+  const X = [], Y = [], Q = [];
+  for (let i = 0; i < n - 1; i++){
+    const a = P[i], b = P[i + 1], d = Math.hypot(b[0] - a[0], b[1] - a[1]);
+    const step = Math.max(1, Math.min(2.2, (R[i] + R[i + 1]) * .6));
+    const m = d > step ? Math.ceil(d / step) : 1;
+    const p0 = P[i - 1] || a, p3 = P[i + 2] || b;
+    for (let s = 0; s < m; s++){
+      const t = s / m, t2 = t * t, t3 = t2 * t;
+      if (s === 0){ X.push(a[0]); Y.push(a[1]); }
+      else {
+        X.push(.5 * ((2 * a[0]) + (-p0[0] + b[0]) * t + (2 * p0[0] - 5 * a[0] + 4 * b[0] - p3[0]) * t2 + (-p0[0] + 3 * a[0] - 3 * b[0] + p3[0]) * t3));
+        Y.push(.5 * ((2 * a[1]) + (-p0[1] + b[1]) * t + (2 * p0[1] - 5 * a[1] + 4 * b[1] - p3[1]) * t2 + (-p0[1] + 3 * a[1] - 3 * b[1] + p3[1]) * t3));
+      }
+      Q.push(R[i] + (R[i + 1] - R[i]) * t);
+    }
+  }
+  X.push(P[n - 1][0]); Y.push(P[n - 1][1]); Q.push(R[n - 1]);
+  ctx.beginPath();
+  const N = X.length;
+  // cerchi solo agli estremi e dove il tratto gira: altrove i raccordi bastano (molto più veloce)
+  for (let i = 0; i < N; i++){
+    if (i > 0 && i < N - 1){
+      const ux = X[i] - X[i - 1], uy = Y[i] - Y[i - 1], vx = X[i + 1] - X[i], vy = Y[i + 1] - Y[i];
+      const lu = Math.hypot(ux, uy), lv = Math.hypot(vx, vy);
+      if (lu > 1e-6 && lv > 1e-6 && (ux * vx + uy * vy) / (lu * lv) > .992) continue;   // svolta sotto ~7°
+    }
+    ctx.moveTo(X[i] + Q[i], Y[i]); ctx.arc(X[i], Y[i], Q[i], 0, 6.283185307179586);
+  }
+  for (let i = 0; i < N - 1; i++){
+    const ax = X[i], ay = Y[i], bx = X[i + 1], by = Y[i + 1], ra = Q[i], rb = Q[i + 1];
+    const d = Math.hypot(bx - ax, by - ay);
+    if (d <= Math.abs(ra - rb) + 1e-3) continue;           // un cerchio contiene l'altro
+    const th = Math.atan2(by - ay, bx - ax), al = Math.acos((ra - rb) / d);
+    const c1 = Math.cos(th + al), s1 = Math.sin(th + al), c2 = Math.cos(th - al), s2 = Math.sin(th - al);
+    // stesso verso dei cerchi (orario sullo schermo), così il riempimento non lascia buchi
+    ctx.moveTo(ax + ra * c2, ay + ra * s2); ctx.lineTo(bx + rb * c2, by + rb * s2);
+    ctx.lineTo(bx + rb * c1, by + rb * s1); ctx.lineTo(ax + ra * c1, ay + ra * s1); ctx.closePath();
+  }
+  ctx.fill('nonzero');
 }
 // Disegna un tratto nella sua posizione; quelli di un giorno restano dentro la casella di quel giorno
 function paintIn(o, ctx, s){
@@ -2642,19 +2697,15 @@ function redraw(o){
 }
 const draw = redraw;
 function drawIncr(o){
-  const a = active, st = a.cur, p = st.pts, ctx = o.lctx;
-  if (!o.w || p.length < 3) return;
-  ctx.setTransform(o.dpr, 0, 0, o.dpr, 0, 0);
-  ctx.lineCap = 'round'; ctx.lineJoin = 'round'; ctx.globalAlpha = 1;
-  ctx.strokeStyle = a.col || (a.col = colorOf(st));
-  const W = st.w || PEN_W[1], wAt = i => Math.max(0.6, Math.round(W * (0.45 + (p[i][2] ?? 0.5) * 1.1) * 4) / 4);
-  let i = Math.max(1, a.drawn || 1);
-  for (; i < p.length - 1; i++){
-    const ax = i === 1 ? p[0][0] : (p[i-1][0] + p[i][0]) / 2, ay = i === 1 ? p[0][1] : (p[i-1][1] + p[i][1]) / 2;
-    ctx.beginPath(); ctx.lineWidth = wAt(i); ctx.moveTo(ax, ay);
-    ctx.quadraticCurveTo(p[i][0], p[i][1], (p[i][0] + p[i+1][0]) / 2, (p[i][1] + p[i+1][1]) / 2); ctx.stroke();
-  }
-  a.drawn = i;
+  // tratto in corso: ridisegnato per intero a ogni movimento, uguale a come resterà; più i punti previsti (meno ritardo)
+  const a = active, st = a.cur, ctx = o.lctx;
+  if (!o.w) return;
+  ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.clearRect(0, 0, o.live.width, o.live.height);
+  ctx.setTransform(o.dpr, 0, 0, o.dpr, 0, 0); ctx.globalAlpha = 1;
+  ctx.fillStyle = a.col || (a.col = colorOf(st));
+  const pts = a.pred && a.pred.length ? st.pts.concat(a.pred) : st.pts;
+  penShape(ctx, pts, st.w || PEN_W[1], 0);
+  a.drawn = st.pts.length;
 }
 function drawLive(o){
   const {lctx, live} = o;
@@ -2719,7 +2770,7 @@ function toPt(e, prev){
   const r = active.rect;
   let raw = active.pen ? e.pressure : 0.5;
   if (!(raw > 0)) raw = prev ? prev[2] : 0.35;
-  const pr = prev ? prev[2]*0.6 + raw*0.4 : raw;    // pressione ammorbidita: spessore senza scatti
+  const pr = raw;                                     // pressione reale: l'ammorbidimento lo fa il disegno, senza ritardo
   const k = active.k || 1;
   return [Math.round((e.clientX - r.left)/k*10)/10, Math.round((e.clientY - r.top)/k*10)/10, Math.round(pr*100)/100];
 }
@@ -2750,6 +2801,7 @@ document.addEventListener('pointerdown', e => {
   clearSel();
   active.cur = {t: drawTool, c: drawTool === 'hl' ? hlColor : penColor,
                 w: drawTool === 'hl' ? HL_W[level.hl] : PEN_W[level.pen], pts:[toPt(e)]};
+  if (!(e.pressure > 0) && active.pen) active.cur.pts[0][2] = .5;
   active.last = Date.now();
   drawLive(o); active.drawn = 1;
 }, {capture:true});
@@ -2764,13 +2816,13 @@ window.addEventListener('pointermove', e => {
   active.last = Date.now();
   for (const ev of list){
     const prev = pts[pts.length-1], q = toPt(ev, prev);
-    if ((q[0]-prev[0])**2 + (q[1]-prev[1])**2 >= 0.09) pts.push(q);   // scarta solo i tremolii sotto 0,3 px
+    if ((q[0]-prev[0])**2 + (q[1]-prev[1])**2 >= 0.04) pts.push(q);   // scarta solo i tremolii sotto 0,2 px
+    else if (q[2] > prev[2]) prev[2] = q[2];                          // ...ma tiene conto della pressione
   }
-  if (active.cur.t === 'hl'){                       // evidenziatore: trasparenza uniforme, ridisegno a ogni fotogramma
-    const pr = (e.getPredictedEvents && e.getPredictedEvents()) || [];
-    active.pred = pr.slice(0,2).map(ev => toPt(ev, pts[pts.length-1]));
-    active.o.scheduleLive();
-  } else drawIncr(active.o);                        // penna: i nuovi segmenti compaiono subito, nello stesso evento
+  const pr = (e.getPredictedEvents && e.getPredictedEvents()) || [];
+  active.pred = pr.slice(0, 2).map(ev => toPt(ev, pts[pts.length-1]));   // anticipo del movimento (dove l'iPad lo fornisce)
+  if (active.cur.t === 'hl') active.o.scheduleLive();   // evidenziatore: trasparenza uniforme, ridisegno a ogni fotogramma
+  else drawIncr(active.o);                            // penna: il tratto compare subito, nello stesso evento
 }, {capture:true, passive:false});
 function endStroke(e){
   if (!active || e.pointerId !== active.id) return;
