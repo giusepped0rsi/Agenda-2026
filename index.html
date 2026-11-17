@@ -675,7 +675,7 @@ body:has(#inkPanel:not([hidden])) .notes{padding-bottom:calc(136px + env(safe-ar
       </div>
     </div>
     <p class="err" id="bkErr" hidden></p>
-    <div class="actions"><span class="ver" style="margin-right:auto;align-self:center">Agenda 1.27</span><button class="btn" id="appUpdate">Aggiorna app</button><button class="btn" id="menuClose">Chiudi</button></div>
+    <div class="actions"><span class="ver" style="margin-right:auto;align-self:center">Agenda 1.28</span><button class="btn" id="appUpdate">Aggiorna app</button><button class="btn" id="menuClose">Chiudi</button></div>
   </div>
 </div>
 
@@ -1185,8 +1185,12 @@ function snapSheet(sheet){
   const snap = sheet.cloneNode(true);
   const srcT = sheet.querySelectorAll('textarea'), dstT = snap.querySelectorAll('textarea');
   srcT.forEach((t, k) => { dstT[k].value = t.value; dstT[k].style.cssText = t.style.cssText; });
+  // 1.28 — copie leggere dell'inchiostro: niente livello "in corso" e risoluzione 1x (Safari ha un limite di memoria per i disegni)
   const srcC = sheet.querySelectorAll('canvas'), dstC = snap.querySelectorAll('canvas');
-  srcC.forEach((c, k) => { try{ dstC[k].getContext('2d').drawImage(c, 0, 0); }catch(_){} });
+  srcC.forEach((c, k) => { const d = dstC[k]; if (!d) return;
+    if (c.classList.contains('live') || !c.width){ d.width = d.height = 0; return; }
+    try{ const w = Math.max(1, Math.round(c.clientWidth || c.width)), h = Math.max(1, Math.round(c.clientHeight || c.height));
+      d.width = w; d.height = h; d.getContext('2d').drawImage(c, 0, 0, w, h); }catch(_){ d.width = d.height = 0; } });
   const scr = [...sheet.querySelectorAll('*')].map((x, k) => [k, x.scrollTop]).filter(v => v[1]);
   snap.querySelectorAll('[id]').forEach(x => x.removeAttribute('id')); snap.removeAttribute('id');
   snap.setAttribute('aria-hidden', 'true'); snap.inert = true; snap.classList.add('flip-snap');
@@ -1196,7 +1200,7 @@ function placeSnap(src, host, W, H, offX){                  // una copia del fog
   const n = src.node.cloneNode(true);
   // i canvas clonati sono vuoti: li ridisegno dalla copia di partenza
   const a = src.node.querySelectorAll('canvas'), b = n.querySelectorAll('canvas');
-  a.forEach((c, k) => { try{ b[k].getContext('2d').drawImage(c, 0, 0); }catch(_){} });
+  a.forEach((c, k) => { const d = b[k]; if (!d) return; d.width = c.width; d.height = c.height; if (c.width) try{ d.getContext('2d').drawImage(c, 0, 0); }catch(_){} });
   const ta = src.node.querySelectorAll('textarea'), tb = n.querySelectorAll('textarea');
   ta.forEach((t, k) => { tb[k].value = t.value; });
   Object.assign(n.style, {left:-offX + 'px', width:W + 'px', height:H + 'px'});
@@ -1230,12 +1234,14 @@ function pageFlip(dir, update){
   const cover = layer(); placeSnap(A, cover, W, H, 0); stage.append(cover); document.body.append(stage);
   update();
   let raf = 0, tm = 0;
-  const done = () => { cancelAnimationFrame(raf); clearTimeout(tm); stage.remove(); flipEnd = null; };
+  let B = null;
+  const freeCanvases = root => root && root.querySelectorAll('canvas').forEach(c => { c.width = c.height = 0; });
+  const done = () => { cancelAnimationFrame(raf); clearTimeout(tm); freeCanvases(stage); freeCanvases(A.node); if (B) freeCanvases(B.node); stage.remove(); flipEnd = null; };
   flipEnd = done;
   tm = setTimeout(done, 2200);
   requestAnimationFrame(() => {
     if (flipEnd !== done) return;
-    const B = snapSheet(sheet), fwd = dir > 0;
+    B = snapSheet(sheet); const fwd = dir > 0;
     const turn = fwd ? [[hw, 0], [W, 0], [W, H], [hw, H]] : [[0, 0], [hw, 0], [hw, H], [0, H]];   // metà che gira
     const still = fwd ? [[0, 0], [hw, 0], [hw, H], [0, H]] : [[hw, 0], [W, 0], [W, H], [hw, H]];
     const keep = layer(); placeSnap(A, keep, W, H, 0); keep.style.clipPath = polyCss(still);
@@ -2638,7 +2644,7 @@ function makeInk(host, getKey, opt = {}){
     const h = o.scroller ? host.scrollHeight : host.clientHeight;
     // nitidezza anche quando il foglio è ingrandito; limite di area dei canvas su iPad (~16 milioni di pixel)
     let dpr = Math.min((window.devicePixelRatio || 1) * (o.zoom ? Math.max(1, o.zoom()) : 1), 3);
-    if (w * h * dpr * dpr > 15.5e6) dpr = Math.max(.75, Math.sqrt(15.5e6 / Math.max(1, w * h)));
+    if (w * h * dpr * dpr > 9e6) dpr = Math.max(.75, Math.sqrt(9e6 / Math.max(1, w * h)));
     for (const k of [c, live]){
       k.style.width = w + 'px'; k.style.height = h + 'px';
       if (k.width !== Math.round(w*dpr) || k.height !== Math.round(h*dpr)){ k.width = Math.round(w*dpr); k.height = Math.round(h*dpr); }
