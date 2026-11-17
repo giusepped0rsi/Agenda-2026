@@ -536,6 +536,36 @@ body:has(#inkPanel:not([hidden])) .notes{padding-bottom:calc(136px + env(safe-ar
 .cal-head{border-bottom-color:var(--rule)}
 .cal-month{font-style:normal;font-weight:700;color:var(--text)}
 @media (orientation:portrait) and (min-width:701px){.sheet::before{display:none}.sheet{row-gap:10px}.left{box-shadow:none}}
+
+/* ===== 1.27 — Note: pagina A4 a tutta larghezza, elenco dei fogli a scomparsa, comandi in alto ===== */
+.notes .notes-bar{display:none}
+#dockNotes{display:none!important}
+.notes .page-wrap{gap:0}
+.notes .page-col{width:100%}
+.ntop{display:flex;align-items:flex-end;gap:8px;flex:none;min-width:0}
+.ntop .btabs{flex:1;min-width:0}
+.ntop .nt-btn,.ntop .act,.ntop #sendActions{flex:none;height:36px;margin-bottom:6px;padding:0 14px;border-radius:10px;border:1px solid var(--rule);background:var(--surface);color:var(--text);font:600 14px var(--f-body);white-space:nowrap;min-height:0}
+.ntop .act.primary{background:var(--ink);border-color:var(--ink);color:var(--surface)}
+.ntop #sendActions{border-color:var(--ink);color:var(--ink)}
+.page-col.fit > .page{position:absolute;left:0;transform-origin:0 0;flex:none}
+.page-col{position:relative}
+#notes #mIndex{position:fixed;left:0;top:0;bottom:0;z-index:62;width:min(340px,86vw);border-radius:0 16px 16px 0;border:0;
+  box-shadow:12px 0 40px rgba(0,0,0,.22);transform:translateX(-104%);transition:transform .28s cubic-bezier(.2,.8,.2,1);
+  padding-top:env(safe-area-inset-top,0px)}
+#notes.drawer-open #mIndex{transform:none}
+.nveil{position:fixed;inset:0;z-index:61;background:rgba(15,15,20,.28)}
+.mfoot{flex:none;border-top:1px solid var(--rule);padding:10px;display:flex;justify-content:center}
+.mfoot .menuwrap{position:relative}
+.mfoot .act{height:38px;padding:0 16px;border-radius:10px;border:1px solid var(--rule);background:var(--surface);font:600 14px var(--f-body);color:var(--text)}
+.mfoot .popover{left:50%;transform:translateX(-50%)}
+/* foglio: puntini leggeri e righe chiare (solo a schermo; il PDF resta bianco con le sue righe) */
+.page{background:linear-gradient(to right,transparent 55px,var(--margin) 55px,var(--margin) 56px,transparent 56px),
+  radial-gradient(circle,var(--dot) 1px,transparent 1.3px) 0 6px/16px 16px,var(--surface);background-attachment:local}
+.page textarea{background-image:linear-gradient(to bottom,transparent 31px,color-mix(in srgb,var(--rule) 75%,transparent) 31px)}
+.a4add{position:absolute;right:24px;height:34px;padding:0 14px;border-radius:10px;border:1px dashed color-mix(in srgb,var(--ink) 45%,transparent);
+  background:var(--surface);color:var(--ink);font:600 13px var(--f-body);pointer-events:auto;z-index:5}
+.a4brk{border-top-width:2px}
+@media (orientation:portrait) and (min-width:701px){#notes #mIndex{width:min(320px,80vw)}}
 </style>
 </head>
 <body>
@@ -645,7 +675,7 @@ body:has(#inkPanel:not([hidden])) .notes{padding-bottom:calc(136px + env(safe-ar
       </div>
     </div>
     <p class="err" id="bkErr" hidden></p>
-    <div class="actions"><span class="ver" style="margin-right:auto;align-self:center">Agenda 1.26</span><button class="btn" id="appUpdate">Aggiorna app</button><button class="btn" id="menuClose">Chiudi</button></div>
+    <div class="actions"><span class="ver" style="margin-right:auto;align-self:center">Agenda 1.27</span><button class="btn" id="appUpdate">Aggiorna app</button><button class="btn" id="menuClose">Chiudi</button></div>
   </div>
 </div>
 
@@ -724,9 +754,14 @@ body:has(#inkPanel:not([hidden])) .notes{padding-bottom:calc(136px + env(safe-ar
         <button class="btn primary" id="mNew" type="button">+ Nuovo foglio</button>
       </div>
       <div class="mlist" id="mList"></div>
+      <div class="mfoot" id="mFoot"></div>
     </aside>
+    <div class="nveil" id="nveil" hidden></div>
     <div class="page-col" id="pageCol">
-    <div class="btabs" id="books" role="tablist" aria-label="Quaderni"></div>
+    <div class="ntop" id="ntop">
+      <button class="nt-btn" id="drawerBtn" type="button" aria-controls="mIndex" aria-expanded="false">☰ Fogli</button>
+      <div class="btabs" id="books" role="tablist" aria-label="Quaderni"></div>
+    </div>
     <div class="mtabs" id="mtabs" role="tablist" aria-label="Sezioni del verbale" hidden></div>
     <div class="m-empty" id="mEmpty" hidden>
       <p>Non c’è ancora nessuno staff meeting.<br>Il verbale nuovo ha le linguette Partecipanti, Punti trattati e Azioni.</p>
@@ -1708,17 +1743,19 @@ document.addEventListener('pointerdown', e => { if (!tabColors.hidden && !e.targ
 
 /* ===== 1.22 — iPad in verticale: il foglio intero (larghezza 860) rimpicciolito per entrare a destra ===== */
 const NOTE_W = 860, portraitMQ = matchMedia('(orientation:portrait) and (min-width:701px)');
+let notesZoom = 1;
+// 1.27 — la pagina A4 (larga 860) viene ingrandita o ridotta per riempire la larghezza, in orizzontale e in verticale
 function fitNotesPage(){
   const col = $('pageCol'), pg = document.querySelector('.page');
   if (!col || !pg) return;
-  const on = portraitMQ.matches && !$('notes').hidden && !pg.hidden && col.clientWidth > 0 && col.clientWidth < NOTE_W;
+  const on = !$('notes').hidden && !pg.hidden && col.clientWidth > 300 && innerWidth > 700;
   if (!on){
-    if (col.classList.contains('fit')){ col.classList.remove('fit'); Object.assign(pg.style, {width:'', height:'', top:'', transform:''}); notesInk.size(); }
+    if (col.classList.contains('fit')){ col.classList.remove('fit'); notesZoom = 1; Object.assign(pg.style, {width:'', height:'', top:'', transform:''}); notesInk.size(); }
     return;
   }
-  const k = col.clientWidth / NOTE_W;
+  const k = col.clientWidth / NOTE_W, old = notesZoom; notesZoom = k;
   let top = 0;
-  for (const id of ['books', 'mtabs']){ const e = $(id); if (e && !e.hidden && e.offsetHeight) top = Math.max(top, e.offsetTop + e.offsetHeight); }
+  for (const id of ['ntop', 'mtabs']){ const e = $(id); if (e && !e.hidden && e.offsetHeight) top = Math.max(top, e.offsetTop + e.offsetHeight); }
   col.classList.add('fit');
   Object.assign(pg.style, {width:NOTE_W + 'px', height:((col.clientHeight - top) / k) + 'px', top:top + 'px', transform:`scale(${k})`});
   notesInk.size();
@@ -2592,14 +2629,16 @@ const bboxes = new WeakMap();
 
 function makeInk(host, getKey, opt = {}){
   const c = el('canvas','ink'), live = el('canvas','ink live');
-  const o = {c, live, host, getKey, scroller:opt.scroller, rows:opt.rows, w:0, h:0, dpr:1, tops:[], raf:0, lraf:0};
+  const o = {c, live, host, getKey, scroller:opt.scroller, rows:opt.rows, zoom:opt.zoom, w:0, h:0, dpr:1, tops:[], raf:0, lraf:0};
   o.ctx = c.getContext('2d'); o.lctx = live.getContext('2d', {desynchronized:true}) || live.getContext('2d');   // tratto in corso: bassa latenza
   o.list = () => data.ink[o.getKey()] || [];
   o.size = () => {
     for (const k of [c, live]){ k.style.width = k.style.height = '0px'; }   // non devono influire sulla misura
     const w = o.scroller ? host.scrollWidth : host.clientWidth;
     const h = o.scroller ? host.scrollHeight : host.clientHeight;
-    const dpr = Math.min(window.devicePixelRatio || 1, 3);
+    // nitidezza anche quando il foglio è ingrandito; limite di area dei canvas su iPad (~16 milioni di pixel)
+    let dpr = Math.min((window.devicePixelRatio || 1) * (o.zoom ? Math.max(1, o.zoom()) : 1), 3);
+    if (w * h * dpr * dpr > 15.5e6) dpr = Math.max(.75, Math.sqrt(15.5e6 / Math.max(1, w * h)));
     for (const k of [c, live]){
       k.style.width = w + 'px'; k.style.height = h + 'px';
       if (k.width !== Math.round(w*dpr) || k.height !== Math.round(h*dpr)){ k.width = Math.round(w*dpr); k.height = Math.round(h*dpr); }
@@ -2791,7 +2830,7 @@ function drawLive(o){
 /* ---------- Input: penna disegna, dita navigano ---------- */
 function inkAt(t){
   if (!t || !t.closest) return null;
-  if (t.closest('.num,.mark,#numMenu')) return null;   // i numeri dei punti si toccano, non si scrive sopra
+  if (t.closest('.num,.mark,#numMenu,.a4add')) return null;   // i numeri dei punti si toccano, non si scrive sopra
   if (!$('notes').hidden) return t.closest('.page') ? notesInk : null;
   if (!$('eventOverlay').hidden || t.closest('.add-point')) return null;
   if (t.closest('#points')) return pointsInk;
@@ -2992,13 +3031,18 @@ function sizeSheet(){
   const ink = cur ? (data.ink[inkKeyOf(cur)] || []) : [];
   const inkBottom = ink.reduce((m, s) => Math.max(m, ...s.pts.map(q => q[1] + (s.w || 2))), 0);
   const need = Math.max(taY + ta.scrollHeight, inkBottom + 20) + ((cur && cur.extra) || 0) * 32;
-  const {grid0, P} = a4Geom(), n = a4Pages(need);
+  const {grid0, P} = a4Geom(), n = Math.max(a4Pages(need), (cur && cur.pages) || 1);
   ta.style.minHeight = (grid0 + n * P - taY) + 'px';
   grow(ta);
   const marks = $('a4marks');
   marks.replaceChildren(...Array.from({length:n - 1}, (_, k) => {
     const d = el('div', 'a4brk'); d.style.top = (grid0 + (k + 1) * P) + 'px'; d.append(el('span', null, `Pagina ${k + 2}`)); return d;
-  }));
+  }), (() => {                                   // + Aggiungi pagina, in fondo all'ultima pagina
+    const b = el('button', 'a4add', '+ Aggiungi pagina'); b.type = 'button'; b.style.top = (grid0 + n * P - 52) + 'px';
+    b.onclick = () => { if (!cur) return; cur.pages = n + 1; save(); sizeSheet();
+      const pg = document.querySelector('.page'); pg.scrollTo({top: grid0 + n * P - 40, behavior:'smooth'}); };
+    return b;
+  })());
   if (typeof notesInk !== 'undefined') notesInk.size();
 }
 function adjustSpace(sp, delta){
@@ -3035,7 +3079,7 @@ function markTarget(){
 const leftInk   = makeInk(document.querySelector('.left'), () => 'w:' + keyOf(mondayOf(fromKey(sel))), {days:true});
 document.querySelector('.weekdays').addEventListener('scroll', () => leftInk.scheduleBase(), {passive:true});
 const pointsInk = makeInk($('points'), () => 'pw:' + ptsWeek, {scroller:true, rows:true});
-const notesInk  = makeInk(document.querySelector('.page'), () => inkKeyOf(data.notes[data.noteIdx]), {scroller:true});
+const notesInk  = makeInk(document.querySelector('.page'), () => inkKeyOf(data.notes[data.noteIdx]), {scroller:true, zoom:() => notesZoom});
 leftInk.host.append(leftInk.c, leftInk.live);
 notesInk.host.append(notesInk.c, notesInk.live);
 
@@ -3579,6 +3623,28 @@ if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.
   navigator.serviceWorker.register('sw.js').catch(() => {});
 }
 updateBackupUI();
+
+/* ===== 1.27 — comandi delle note in alto, elenco dei fogli a scomparsa ===== */
+(function(){
+  const top = $('ntop');
+  top.append($('sendActions'), $('notesExport'), $('closeNotes'));
+  const mw = $('sheetMenuBtn').closest('.menuwrap'); $('mFoot').append(mw);
+  $('sheetMenuBtn').textContent = 'Taglia, copia, ordina, cestino ▴';
+  const notes = $('notes');
+  const setDrawer = open => {
+    notes.classList.toggle('drawer-open', open); $('nveil').hidden = !open;
+    $('drawerBtn').setAttribute('aria-expanded', open);
+    if (!open) closeSheetMenu?.();
+  };
+  window.closeDrawer = () => setDrawer(false);
+  $('drawerBtn').onclick = () => setDrawer(!notes.classList.contains('drawer-open'));
+  $('nveil').onclick = () => setDrawer(false);
+  $('mList').addEventListener('click', e => { const it = e.target.closest('.mi'); if (it && !e.target.closest('.mi-h')) setTimeout(() => setDrawer(false), 120); });
+  $('mNew').addEventListener('click', () => setTimeout(() => setDrawer(false), 120));
+  $('sheetMenu').addEventListener('click', e => { if (e.target.closest('.pop-i')) setTimeout(() => setDrawer(false), 60); });   // dopo un comando il pannello si chiude
+  new MutationObserver(() => { if (notes.hidden) setDrawer(false); }).observe(notes, {attributes:true, attributeFilter:['hidden']});
+  document.addEventListener('keydown', e => { if (e.key === 'Escape' && notes.classList.contains('drawer-open')) setDrawer(false); });
+})();
 </script>
 
 </body>
