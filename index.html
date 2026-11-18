@@ -566,6 +566,64 @@ body:has(#inkPanel:not([hidden])) .notes{padding-bottom:calc(136px + env(safe-ar
   background:var(--surface);color:var(--ink);font:600 13px var(--f-body);pointer-events:auto;z-index:5}
 .a4brk{border-top-width:2px}
 @media (orientation:portrait) and (min-width:701px){#notes #mIndex{width:min(320px,80vw)}}
+
+/* ===== 1.29 — Vista dell'anno ===== */
+.year-btn{flex:none;height:30px;padding:0 10px;border-radius:9px;border:1px solid var(--rule);background:var(--surface);color:var(--ink);font:700 12px var(--f-body);letter-spacing:.04em;text-transform:uppercase}
+.yearov{position:fixed;inset:0;z-index:58;background:rgba(15,15,20,.32);display:flex;align-items:center;justify-content:center;padding:max(16px,env(safe-area-inset-top,0px)) 16px calc(16px + env(safe-area-inset-bottom,0px))}
+.yearov[hidden]{display:none}
+.yr-card{background:var(--surface);border-radius:18px;box-shadow:0 20px 60px rgba(0,0,0,.25);width:min(1100px,100%);max-height:100%;display:flex;flex-direction:column;overflow:hidden}
+.yr-head{display:flex;align-items:center;gap:10px;padding:14px 18px;border-bottom:1px solid var(--rule)}
+.yr-head h2{margin:0;font:700 24px var(--f-body);min-width:70px;text-align:center}
+.yr-sp{flex:1}
+.yr-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px 18px;padding:16px 18px 20px;overflow:auto}
+@media (orientation:portrait){.yr-grid{grid-template-columns:repeat(3,minmax(0,1fr))}}
+.yr-m{border-radius:12px;padding:8px 8px 10px;background:var(--card,var(--surface));box-shadow:var(--card-sh,0 1px 3px rgba(0,0,0,.06));border:1px solid var(--rule)}
+.yr-m.cur{border-color:var(--accent,var(--ink));box-shadow:0 0 0 1.5px var(--accent,var(--ink))}
+.yr-mn{display:block;width:100%;text-align:left;border:0;background:none;font:700 15px var(--f-body);color:var(--text);padding:4px 4px 6px;border-radius:8px;text-transform:capitalize}
+.yr-mn:active{background:var(--sel)}
+.yr-days{display:grid;grid-template-columns:repeat(7,1fr);gap:1px}
+.yr-days .dw{font:600 9.5px var(--f-body);color:var(--muted);text-align:center;padding:2px 0}
+.yr-d{position:relative;border:0;background:none;height:24px;border-radius:6px;font:500 12px var(--f-body);color:var(--text);padding:0;font-variant-numeric:tabular-nums}
+.yr-d.out{visibility:hidden}
+.yr-d.we{color:var(--muted)}
+.yr-d.hol{color:#c2414b;font-weight:700}
+.yr-d.wk{background:var(--sel)}
+.yr-d.today{background:var(--accent,var(--ink));color:#fff;font-weight:700}
+.yr-d i{position:absolute;left:50%;bottom:2px;width:4px;height:4px;margin-left:-2px;border-radius:50%;background:var(--c,var(--ink))}
+.yr-d:active{transform:scale(.92)}
+
+/* ===== 1.29 — Foglio protetto PSW ===== */
+.psw-btn{position:relative}
+.psw-btn::before{content:'';display:inline-block;width:9px;height:11px;margin-right:6px;vertical-align:-1px;border:1.6px solid currentColor;border-radius:2px 2px 3px 3px;
+  background:linear-gradient(currentColor,currentColor) 50% 65%/2px 4px no-repeat}
+.pswov{position:fixed;inset:0;z-index:41;background:var(--paper);display:flex;flex-direction:column;gap:10px;
+  padding:calc(10px + env(safe-area-inset-top,0px)) max(16px,env(safe-area-inset-right,0px)) calc(80px + env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px))}
+.pswov[hidden]{display:none}
+.pswov:not([hidden]) ~ .dock #dockMain,.pswov:not([hidden]) ~ .dock #dockNotes{display:none!important}
+.psw-bar{display:flex;align-items:center;gap:8px;flex:none}
+.psw-bar h2{margin:0;font:700 22px var(--f-body)}
+.psw-bar h2 span{font-weight:400;color:var(--muted);font-size:16px}
+.psw-bar .act{height:38px;padding:0 14px;border-radius:10px;border:1px solid var(--rule);background:var(--surface);color:var(--text);font:600 14px var(--f-body)}
+.psw-bar .act.primary{background:var(--ink);border-color:var(--ink);color:var(--surface)}
+.psw-bar .act.on{border-color:#2e9e5b;color:#2e9e5b}
+.psw-gate{flex:1;display:flex;align-items:center;justify-content:center;min-height:0}
+.psw-gate[hidden]{display:none}
+.psw-card{width:min(440px,100%);background:var(--surface);border-radius:18px;box-shadow:0 14px 40px rgba(0,0,0,.14);padding:24px;display:flex;flex-direction:column;gap:12px}
+.psw-card h3{margin:0;font:700 20px var(--f-body)}
+.psw-card p{margin:0;color:var(--muted);line-height:1.45;font-size:14.5px}
+.psw-card input{height:48px;border-radius:12px;border:1.5px solid var(--rule);padding:0 14px;font:500 17px var(--f-body);background:var(--paper);color:var(--text)}
+.psw-card input:focus{outline:none;border-color:var(--ink)}
+.psw-card .btn{min-height:48px}
+.psw-card .link{border:0;background:none;color:var(--ink);font:600 14px var(--f-body);padding:6px;text-decoration:underline}
+.psw-card .err{color:#c2414b;font-weight:600;min-height:1.2em}
+.psw-code{font:700 22px/1.4 ui-monospace,Menlo,monospace;letter-spacing:.06em;text-align:center;padding:14px;border-radius:12px;background:var(--paper);border:1.5px dashed var(--ink);user-select:all;-webkit-user-select:all}
+.psw-bio-big{display:flex;align-items:center;justify-content:center;gap:10px}
+.psw-wrap{flex:1;min-height:0;overflow:hidden;display:flex;justify-content:center}
+.psw-wrap[hidden]{display:none}
+.psw-page{position:relative;width:min(860px,100%);height:100%;overflow-y:auto;-webkit-overflow-scrolling:touch;border-radius:10px;border-top:4px solid #c2414b;
+  background:linear-gradient(to right,transparent 55px,var(--margin) 55px,var(--margin) 56px,transparent 56px),radial-gradient(circle,var(--dot,#d9d9d4) 1px,transparent 1.3px) 0 6px/16px 16px,var(--surface);background-attachment:local;box-shadow:var(--card-sh,0 1px 3px rgba(0,0,0,.08))}
+.psw-page textarea{display:block;width:100%;min-height:1216px;border:0;resize:none;background:transparent;color:var(--text);font:16px/32px var(--f-body);padding:6px 24px 40px 72px;outline:none;
+  background-image:linear-gradient(to bottom,transparent 31px,color-mix(in srgb,var(--rule) 75%,transparent) 31px);background-size:100% 32px;background-position:0 6px;background-attachment:local}
 </style>
 </head>
 <body>
@@ -597,6 +655,7 @@ body:has(#inkPanel:not([hidden])) .notes{padding-bottom:calc(136px + env(safe-ar
             <button class="icon-btn" id="prevMonth" aria-label="Mese precedente">‹</button>
             <h2 class="cal-month" id="calMonth"></h2>
             <button class="icon-btn" id="nextMonth" aria-label="Mese successivo">›</button>
+            <button class="year-btn" id="yearBtn" type="button" aria-label="Vedi tutti i mesi dell'anno">Anno</button>
           </div>
           <div class="cal-grid" id="calGrid"></div>
         </div>
@@ -675,7 +734,7 @@ body:has(#inkPanel:not([hidden])) .notes{padding-bottom:calc(136px + env(safe-ar
       </div>
     </div>
     <p class="err" id="bkErr" hidden></p>
-    <div class="actions"><span class="ver" style="margin-right:auto;align-self:center">Agenda 1.28</span><button class="btn" id="appUpdate">Aggiorna app</button><button class="btn" id="menuClose">Chiudi</button></div>
+    <div class="actions"><span class="ver" style="margin-right:auto;align-self:center">Agenda 1.29</span><button class="btn" id="appUpdate">Aggiorna app</button><button class="btn" id="menuClose">Chiudi</button></div>
   </div>
 </div>
 
@@ -728,6 +787,40 @@ body:has(#inkPanel:not([hidden])) .notes{padding-bottom:calc(136px + env(safe-ar
 </div>
 
 <!-- BLOCCO NOTE -->
+<!-- VISTA DELL'ANNO -->
+<div class="yearov" id="yearOv" hidden role="dialog" aria-label="Mesi dell'anno">
+  <div class="yr-card">
+    <div class="yr-head">
+      <button class="icon-btn" id="yrPrev" aria-label="Anno precedente">‹</button>
+      <h2 id="yrTitle"></h2>
+      <button class="icon-btn" id="yrNext" aria-label="Anno successivo">›</button>
+      <span class="yr-sp"></span>
+      <button class="btn" id="yrToday" type="button">Oggi</button>
+      <button class="btn primary" id="yrClose" type="button">Chiudi</button>
+    </div>
+    <div class="yr-grid" id="yrGrid"></div>
+  </div>
+</div>
+
+<!-- FOGLIO PROTETTO PSW -->
+<div class="pswov" id="pswOverlay" hidden>
+  <div class="psw-bar">
+    <h2>PSW <span>· foglio protetto</span></h2>
+    <span class="yr-sp"></span>
+    <button class="act" id="pswBio" type="button" hidden>Face ID / Touch ID</button>
+    <button class="act" id="pswChange" type="button" hidden>Cambia password</button>
+    <button class="act primary" id="pswClose" type="button">Blocca e chiudi</button>
+  </div>
+  <div class="psw-gate" id="pswGate">
+    <div class="psw-card" id="pswCard"></div>
+  </div>
+  <div class="psw-wrap" id="pswWrap" hidden>
+    <div class="psw-page" id="pswPage">
+      <textarea id="pswText" spellcheck="false" autocomplete="off" aria-label="Foglio protetto" placeholder="Scrivi qui con la tastiera o con Apple Pencil…"></textarea>
+    </div>
+  </div>
+</div>
+
 <div class="notes" id="notes" hidden>
   <div class="notes-bar">
     <h3>Blocco note</h3>
@@ -832,6 +925,7 @@ body:has(#inkPanel:not([hidden])) .notes{padding-bottom:calc(136px + env(safe-ar
     <div class="acts" id="dockMain" role="group" aria-label="Comandi">
       <button class="act" id="openExport" aria-label="Esporta in PDF">Export</button>
       <button class="act" id="openMenu" aria-label="Backup e ripristino">Backup<i class="badge" id="bkBadge" hidden></i></button>
+      <button class="act psw-btn" id="openPsw" aria-label="Foglio protetto PSW">PSW</button>
       <button class="act strong" id="openNotes">Note</button>
       <button class="act primary" id="openEvent">Eventi</button>
     </div>
@@ -974,11 +1068,13 @@ let saveT;
 function writeNow(){
   clearTimeout(saveT);
   data.savedAt = Date.now(); mem = data;
-  const json = JSON.stringify(data);
+  const json = JSON.stringify(data, stripPlain);
   try{ localStorage.setItem(KEY, json); }catch(e){}
   idbPut(JSON.parse(json));
 }
-function save(){ clearTimeout(saveT); saveT = setTimeout(writeNow, 250); }
+function save(){ clearTimeout(saveT); saveT = setTimeout(writeNow, 250); if (typeof pswTouch === 'function') pswTouch(); }
+// il contenuto in chiaro del foglio PSW non viene mai salvato: resta solo cifrato in data.psw
+function stripPlain(k, v){ return (k === 'psw' && this === data.ink) ? undefined : v; }
 window.addEventListener('pagehide', writeNow);
 document.addEventListener('visibilitychange', () => { if(document.visibilityState === 'hidden') writeNow(); });
 
@@ -2715,7 +2811,7 @@ function penShape(ctx, p, W, dy, kind){
     if (i === 0 || i === n - 1) P[i] = [q[0], q[1] + dy];
     else {                                               // ammorbidisce solo i campioni fitti: gli angoli veri restano angoli
       const a = p[i - 1], c = p[i + 1], dd = Math.max(Math.hypot(q[0] - a[0], q[1] - a[1]), Math.hypot(c[0] - q[0], c[1] - q[1]));
-      const f = dd < 2.5 ? 1 : dd < 6 ? (6 - dd) / 3.5 : 0;
+      const f = dd < 1.2 ? .8 : dd < 3 ? .8 * (3 - dd) / 1.8 : 0;   // 1.29: più fedele al movimento reale
       P[i] = [q[0] + f * ((a[0] + 2 * q[0] + c[0]) / 4 - q[0]), q[1] + f * ((a[1] + 2 * q[1] + c[1]) / 4 - q[1]) + dy];
     }
     let sw = 0, sv = 0;
@@ -2784,11 +2880,15 @@ function redraw(o){
 }
 const draw = redraw;
 function drawIncr(o){
-  // 1.25 — tratto in corso: una volta per fotogramma, pulendo solo l'area del tratto (non tutto il foglio),
-  // con la stessa forma che resterà alla fine
+  // 1.29 — tratto in corso disegnato subito, nello stesso evento della penna (niente attesa del fotogramma):
+  // si pulisce solo l'area del tratto. Solo per tratti lunghissimi si passa al ritmo dei fotogrammi.
+  const a0 = active;
+  if (a0 && a0.cur && a0.cur.pts.length < 500){ if (o.praf){ cancelAnimationFrame(o.praf); o.praf = 0; } drawTail(o); return; }
   if (o.praf) return;
-  o.praf = requestAnimationFrame(() => {
-    o.praf = 0;
+  o.praf = requestAnimationFrame(() => { o.praf = 0; drawTail(o); });
+}
+function drawTail(o){
+  {
     const a = active; if (!a || a.o !== o || !a.cur || !o.w) return;
     const st = a.cur, ctx = o.lctx, pts = st.pts, m = (st.w || PEN_W[1]) * 1.6 + 3;
     let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity;
@@ -2801,7 +2901,7 @@ function drawIncr(o){
     ctx.globalAlpha = 1; ctx.fillStyle = a.col || (a.col = colorOf(st));
     penShape(ctx, pts, st.w || PEN_W[1], 0, st.k || 'f');
     a.drawn = pts.length;
-  });
+  }
 }
 function drawLive(o){
   const {lctx, live} = o;
@@ -2836,7 +2936,8 @@ function drawLive(o){
 /* ---------- Input: penna disegna, dita navigano ---------- */
 function inkAt(t){
   if (!t || !t.closest) return null;
-  if (t.closest('.num,.mark,#numMenu,.a4add')) return null;   // i numeri dei punti si toccano, non si scrive sopra
+  if (t.closest('.num,.mark,#numMenu,.a4add')) return null;
+  if (!$('pswOverlay').hidden) return (t.closest('.psw-page') && typeof pswInk !== 'undefined' && pswKey) ? pswInk : null;   // i numeri dei punti si toccano, non si scrive sopra
   if (!$('notes').hidden) return t.closest('.page') ? notesInk : null;
   if (!$('eventOverlay').hidden || t.closest('.add-point')) return null;
   if (t.closest('#points')) return pointsInk;
@@ -2877,6 +2978,8 @@ document.addEventListener('pointerdown', e => {
     if (o){ e.preventDefault(); e.stopPropagation(); stopPaste(); showGhost(e.clientX, e.clientY, false); return; }
   }
   if (active && e.pointerType !== 'touch' && Date.now() - (active.last || 0) > 800) endStroke({pointerId: active.id});
+  // 1.29 — nuovo tratto della Pencil mentre il precedente risulta ancora aperto (pointerup perso): chiudo il vecchio, non perdo il nuovo
+  if (active && e.pointerType === 'pen' && active.pen) endStroke({pointerId: active.id});
   if (e.pointerType === 'touch' || active) return;
   if (e.pointerType === 'mouse' && e.button !== 0) return;
   // Apple Pencil scrive sempre: in "Tastiera" passa da sola a "Solo penna". Solo "Penna → testo" la lascia a Scribble.
@@ -2960,7 +3063,7 @@ function endStroke(e){
 }
 window.addEventListener('pointerup', endStroke, {capture:true});
 window.addEventListener('pointercancel', endStroke, {capture:true});
-window.addEventListener('lostpointercapture', endStroke, {capture:true});
+// (1.29: niente fine tratto su 'lostpointercapture': su iPad scattava a metà tratto e lo spezzava)
 
 // iPad: la Pencil non deve scorrere la pagina, aprire la lente o attivare Scribble;
 // mentre scrivi, il palmo appoggiato non sposta nulla. Le dita restano libere.
@@ -3341,7 +3444,7 @@ function setMode(m, auto){
   if (auto) document.querySelector('.mode[data-mode="ink"]')?.animate?.([{transform:'scale(1.12)'}, {transform:'scale(1)'}], {duration:260, easing:'ease-out'});
   document.querySelectorAll('.mode').forEach(b => b.setAttribute('aria-pressed', b.dataset.mode === m));
   $('inkPanel').hidden = m !== 'ink';
-  document.querySelectorAll('.point textarea, .memo, #sheetText').forEach(t => t.readOnly = m === 'ink');
+  document.querySelectorAll('.point textarea, .memo, #sheetText, #pswText').forEach(t => t.readOnly = m === 'ink');
   if (m === 'ink' && document.activeElement && document.activeElement !== document.body) document.activeElement.blur();
   markTarget();
 }
@@ -3420,7 +3523,7 @@ $('menuOverlay').addEventListener('pointerdown', e => { if(e.target.id === 'menu
 async function exportBackup(){
   writeNow();
   const name = `Agenda-backup-${keyOf(new Date())}.json`;
-  const json = JSON.stringify({app:'agenda-ipad', version:1, exportedAt:new Date().toISOString(), data});
+  const json = JSON.stringify({app:'agenda-ipad', version:1, exportedAt:new Date().toISOString(), data}, stripPlain);
   const file = new File([json], name, {type:'application/json'});
   const done = () => { data.lastBackup = Date.now(); writeNow(); updateBackupUI(); updateBanner(); };
   try{
@@ -3578,7 +3681,7 @@ function idbReq(mode, fn){
 }
 const snapKeys = async () => ((await idbReq('readonly', st => st.getAllKeys())) || []).filter(k => String(k).startsWith('snap-')).sort();
 async function makeSnapshot(dayKey){
-  await idbReq('readwrite', st => st.put(JSON.parse(JSON.stringify(data)), 'snap-' + dayKey));
+  await idbReq('readwrite', st => st.put(JSON.parse(JSON.stringify(data, stripPlain)), 'snap-' + dayKey));
   const keys = await snapKeys();
   for (const old of keys.slice(0, Math.max(0, keys.length - SNAP_MAX))) await idbReq('readwrite', st => st.delete(old));
 }
@@ -3651,6 +3754,252 @@ updateBackupUI();
   new MutationObserver(() => { if (notes.hidden) setDrawer(false); }).observe(notes, {attributes:true, attributeFilter:['hidden']});
   document.addEventListener('keydown', e => { if (e.key === 'Escape' && notes.classList.contains('drawer-open')) setDrawer(false); });
 })();
+
+/* ===== 1.29 — Vista dell'anno: 12 mesi; tocco sul giorno → quel giorno, tocco sul mese → quel mese ===== */
+let yrYear = today.getFullYear();
+function renderYear(){
+  $('yrTitle').textContent = yrYear;
+  const wk0 = keyOf(mondayOf(fromKey(sel))), wk1 = keyOf(addDays(mondayOf(fromKey(sel)), 6)), tk = keyOf(today);
+  const evDays = new Map();
+  for (const e of data.events || []){
+    let d = fromKey(e.date); const end = fromKey(e.end || e.date);
+    for (let i = 0; i < 400 && d <= end; i++, d = addDays(d, 1)){ const k = keyOf(d); if (k.startsWith(yrYear + '-') && !evDays.has(k)) evDays.set(k, typeColor(e.type)); }
+  }
+  $('yrGrid').replaceChildren(...Array.from({length:12}, (_, m) => {
+    const first = new Date(yrYear, m, 1), box = el('div', 'yr-m');
+    if (yrYear === today.getFullYear() && m === today.getMonth()) box.classList.add('cur');
+    const mn = el('button', 'yr-mn', fmt(first, {month:'long'})); mn.type = 'button';
+    mn.setAttribute('aria-label', `Apri ${fmt(first, {month:'long', year:'numeric'})}`);
+    mn.onclick = () => { closeYear(); calMonth = first; selectDay(keyOf(first)); };
+    const g = el('div', 'yr-days');
+    ['L','M','M','G','V','S','D'].forEach(x => g.append(el('span', 'dw', x)));
+    const start = mondayOf(first);
+    for (let i = 0; i < 42; i++){
+      const d = addDays(start, i), k = keyOf(d);
+      if (i >= 35 && d.getMonth() !== m) break;
+      const b = el('button', 'yr-d', d.getDate()); b.type = 'button';
+      if (d.getMonth() !== m){ b.classList.add('out'); b.tabIndex = -1; g.append(b); continue; }
+      const dow = (d.getDay() + 6) % 7;
+      if (dow >= 5) b.classList.add('we');
+      if (holidayOf(k)){ b.classList.add('hol'); b.title = holidayOf(k); }
+      if (k >= wk0 && k <= wk1) b.classList.add('wk');
+      if (k === tk) b.classList.add('today');
+      if (evDays.has(k)){ const i_ = el('i'); i_.style.setProperty('--c', evDays.get(k)); b.append(i_); }
+      b.setAttribute('aria-label', fmt(d, {weekday:'long', day:'numeric', month:'long'}) + (holidayOf(k) ? ' · ' + holidayOf(k) : ''));
+      b.onclick = () => { closeYear(); calMonth = new Date(d.getFullYear(), d.getMonth(), 1); selectDay(k); };
+      g.append(b);
+    }
+    box.append(mn, g); return box;
+  }));
+}
+function openYear(){ yrYear = fromKey(sel).getFullYear(); renderYear(); $('yearOv').hidden = false; }
+function closeYear(){ $('yearOv').hidden = true; }
+$('yearBtn').onclick = openYear;
+$('yrClose').onclick = closeYear;
+$('yrPrev').onclick = () => { yrYear--; renderYear(); };
+$('yrNext').onclick = () => { yrYear++; renderYear(); };
+$('yrToday').onclick = () => { closeYear(); calMonth = new Date(today.getFullYear(), today.getMonth(), 1); selectDay(keyOf(today)); };
+$('yearOv').addEventListener('click', e => { if (e.target === $('yearOv')) closeYear(); });
+document.addEventListener('keydown', e => { if (e.key === 'Escape' && !$('yearOv').hidden) closeYear(); });
+
+/* ===== 1.29 — Foglio PSW protetto =====
+   Il contenuto (testo e penna) è cifrato con AES-GCM 256 da una chiave casuale; la chiave è a sua volta
+   protetta (avvolta) con: la password (PBKDF2), il codice di recupero e, se attivato, Face ID / Touch ID
+   (passkey dell'iPad con estensione PRF). Il testo in chiaro non viene mai salvato né messo nei backup. */
+const PSW_IT = 210000;
+const u8 = n => crypto.getRandomValues(new Uint8Array(n));
+const b64e = a => { a = a instanceof Uint8Array ? a : new Uint8Array(a); let s = ''; for (let i = 0; i < a.length; i += 0x8000) s += String.fromCharCode.apply(null, a.subarray(i, i + 0x8000)); return btoa(s); };
+const b64d = s => Uint8Array.from(atob(s), c => c.charCodeAt(0));
+const tenc = new TextEncoder(), tdec = new TextDecoder();
+async function kekFromSecret(secret, salt){
+  const base = await crypto.subtle.importKey('raw', tenc.encode(secret), 'PBKDF2', false, ['deriveKey']);
+  return crypto.subtle.deriveKey({name:'PBKDF2', salt, iterations:PSW_IT, hash:'SHA-256'}, base, {name:'AES-GCM', length:256}, false, ['wrapKey', 'unwrapKey']);
+}
+async function kekFromPrf(out){
+  const base = await crypto.subtle.importKey('raw', out, 'HKDF', false, ['deriveKey']);
+  return crypto.subtle.deriveKey({name:'HKDF', hash:'SHA-256', salt:new Uint8Array(32), info:tenc.encode('agenda-psw-bio')}, base, {name:'AES-GCM', length:256}, false, ['wrapKey', 'unwrapKey']);
+}
+async function wrapWith(kek, dk){ const iv = u8(12); const w = await crypto.subtle.wrapKey('raw', dk, kek, {name:'AES-GCM', iv}); return {iv:b64e(iv), w:b64e(w)}; }
+async function unwrapWith(kek, rec){ return crypto.subtle.unwrapKey('raw', b64d(rec.w), kek, {name:'AES-GCM', iv:b64d(rec.iv)}, {name:'AES-GCM', length:256}, true, ['encrypt', 'decrypt']); }
+async function sealContent(dk, obj){ const iv = u8(12); const ct = await crypto.subtle.encrypt({name:'AES-GCM', iv}, dk, tenc.encode(JSON.stringify(obj))); return {iv:b64e(iv), ct:b64e(ct)}; }
+async function openContent(dk, c){ if (!c) return {text:'', ink:[]}; const pt = await crypto.subtle.decrypt({name:'AES-GCM', iv:b64d(c.iv)}, dk, b64d(c.ct)); return JSON.parse(tdec.decode(pt)); }
+const normCode = c => (c || '').toUpperCase().replace(/[^A-Z0-9]/g, '');
+function newRecoveryCode(){
+  const A = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789', r = u8(24); let s = '';
+  for (let i = 0; i < 24; i++){ s += A[r[i] % A.length]; if (i % 4 === 3 && i < 23) s += '-'; }
+  return s;
+}
+
+let pswKey = null;              // chiave del contenuto, solo in memoria mentre il foglio è aperto
+let pswSealT = 0, pswSealing = null;
+const pswInk = makeInk($('pswPage'), () => 'psw', {scroller:true});
+$('pswPage').append(pswInk.c, pswInk.live);
+const pswState = () => data.psw || null;
+const bioAvailable = () => !!(window.PublicKeyCredential && navigator.credentials && window.isSecureContext);
+
+function pswTouch(){                                   // dopo ogni modifica: ricifro (con un piccolo ritardo)
+  if (!pswKey) return;
+  clearTimeout(pswSealT); pswSealT = setTimeout(pswSeal, 400);
+}
+async function pswSeal(){
+  if (!pswKey || !data.psw) return;
+  clearTimeout(pswSealT);
+  const key = pswKey;
+  pswSealing = sealContent(key, {text:$('pswText').value, ink:data.ink.psw || []}).then(c => { if (data.psw && pswKey === key){ data.psw.c = c; clearTimeout(saveT); saveT = setTimeout(writeNow, 50); } });
+  await pswSealing; pswSealing = null;
+}
+async function pswLock(){
+  if (pswKey){ await pswSeal(); writeNow(); }
+  pswKey = null; delete data.ink.psw;
+  $('pswText').value = ''; pswInk.size();
+  $('pswWrap').hidden = true; $('pswBio').hidden = $('pswChange').hidden = true;
+}
+async function pswShowSheet(dk){
+  const st = pswState();
+  let content;
+  try{ content = await openContent(dk, st.c); }catch(e){ pswGate('err', 'Il contenuto non si può decifrare.'); return; }
+  pswKey = dk;
+  data.ink.psw = content.ink || [];
+  $('pswText').value = content.text || '';
+  $('pswGate').hidden = true; $('pswWrap').hidden = false;
+  $('pswBio').hidden = !bioAvailable(); $('pswChange').hidden = false;
+  $('pswBio').textContent = st.bio ? 'Face ID attivo' : 'Attiva Face ID / Touch ID';
+  $('pswBio').classList.toggle('on', !!st.bio);
+  $('pswText').readOnly = mode === 'ink';
+  requestAnimationFrame(() => { growPsw(); pswInk.size(); });
+}
+function growPsw(){ const t = $('pswText'); t.style.height = 'auto'; t.style.height = Math.max(1216, t.scrollHeight + 64) + 'px'; }
+$('pswText').addEventListener('input', () => { growPsw(); pswInk.size(); pswTouch(); });
+
+// --- schermate di accesso
+function card(...kids){ $('pswCard').replaceChildren(...kids); $('pswGate').hidden = false; $('pswWrap').hidden = true; const f = $('pswCard').querySelector('input'); if (f) setTimeout(() => f.focus(), 60); }
+function field(ph, type = 'password'){ const i = el('input'); i.type = type; i.placeholder = ph; i.autocomplete = type === 'password' ? 'current-password' : 'off'; i.setAttribute('autocapitalize', 'off'); i.spellcheck = false; return i; }
+function btn(txt, cls, fn){ const b = el('button', 'btn' + (cls ? ' ' + cls : ''), txt); b.type = 'button'; b.onclick = fn; return b; }
+function busy(b, on, txt){ b.disabled = on; if (txt) b.textContent = txt; }
+function pswGate(kind, msg){
+  const st = pswState(), err = el('p', 'err', msg || '');
+  if (!st || kind === 'setup'){                         // prima volta: imposto la password
+    const p1 = field('Nuova password (almeno 6 caratteri)'), p2 = field('Ripeti la password');
+    p1.autocomplete = p2.autocomplete = 'new-password';
+    const go = btn('Continua', 'primary', async () => {
+      if (p1.value.length < 6){ err.textContent = 'La password deve avere almeno 6 caratteri.'; return; }
+      if (p1.value !== p2.value){ err.textContent = 'Le due password non coincidono.'; return; }
+      busy(go, true, 'Preparo la protezione…');
+      const dk = await crypto.subtle.generateKey({name:'AES-GCM', length:256}, true, ['encrypt', 'decrypt']);
+      const code = newRecoveryCode(), s1 = u8(16), s2 = u8(16);
+      data.psw = {v:1, it:PSW_IT, pw:{s:b64e(s1), ...(await wrapWith(await kekFromSecret(p1.value, s1), dk))},
+                  rec:{s:b64e(s2), ...(await wrapWith(await kekFromSecret(normCode(code), s2), dk))}};
+      data.psw.c = await sealContent(dk, {text:'', ink:[]}); writeNow();
+      showCode(code, dk);
+    });
+    p2.onkeydown = e => { if (e.key === 'Enter') go.click(); };
+    card(el('h3', null, 'Proteggi il foglio PSW'), el('p', null, 'Scegli la password che ti verrà chiesta a ogni apertura. Il contenuto viene cifrato sull’iPad.'), p1, p2, err, go);
+    return;
+  }
+  if (kind === 'recover'){
+    const c = field('Codice di recupero (es. ABCD-EFGH-…)', 'text'), p1 = field('Nuova password'), p2 = field('Ripeti la nuova password');
+    c.style.textTransform = 'uppercase'; p1.autocomplete = p2.autocomplete = 'new-password';
+    const go = btn('Reimposta la password', 'primary', async () => {
+      if (p1.value.length < 6){ err.textContent = 'La password deve avere almeno 6 caratteri.'; return; }
+      if (p1.value !== p2.value){ err.textContent = 'Le due password non coincidono.'; return; }
+      busy(go, true, 'Verifico…');
+      try{
+        const dk = await unwrapWith(await kekFromSecret(normCode(c.value), b64d(st.rec.s)), st.rec);
+        const s1 = u8(16); data.psw.pw = {s:b64e(s1), ...(await wrapWith(await kekFromSecret(p1.value, s1), dk))}; writeNow();
+        toast('Password reimpostata'); pswShowSheet(dk);
+      }catch(e){ busy(go, false, 'Reimposta la password'); err.textContent = 'Codice di recupero non corretto.'; }
+    });
+    card(el('h3', null, 'Password dimenticata'), el('p', null, 'Inserisci il codice di recupero che hai conservato e scegli una nuova password.'), c, p1, p2, err, go,
+         btn('Torna indietro', 'link', () => pswGate('lock')));
+    return;
+  }
+  // foglio bloccato: password, oppure Face ID
+  const p = field('Password');
+  const go = btn('Sblocca', 'primary', async () => {
+    if (!p.value) return;
+    busy(go, true, 'Verifico…');
+    try{ const dk = await unwrapWith(await kekFromSecret(p.value, b64d(st.pw.s)), st.pw); pswShowSheet(dk); }
+    catch(e){ busy(go, false, 'Sblocca'); err.textContent = 'Password non corretta.'; p.select(); }
+  });
+  p.onkeydown = e => { if (e.key === 'Enter') go.click(); };
+  const kids = [el('h3', null, 'Foglio protetto'), el('p', null, 'Inserisci la password per aprire il foglio PSW.'), p, err, go];
+  if (st.bio && bioAvailable()) kids.splice(2, 0, btn('Sblocca con Face ID / Touch ID', 'psw-bio-big', () => bioUnlock(err)), el('p', null, 'oppure'));
+  kids.push(btn('Ho dimenticato la password', 'link', () => pswGate('recover')));
+  card(...kids);
+}
+function showCode(code, dk){
+  const box = el('div', 'psw-code', code), ok = btn('Ho conservato il codice: apri il foglio', 'primary', async () => {
+    if (bioAvailable()) await bioOffer(dk); pswShowSheet(dk);
+  });
+  const cp = btn('Copia il codice', '', async () => { try{ await navigator.clipboard.writeText(code); cp.textContent = 'Copiato'; }catch(e){} });
+  card(el('h3', null, 'Codice di recupero'), el('p', null, 'Serve solo se dimentichi la password. Conservalo in un luogo sicuro, fuori dall’iPad (ad esempio stampato). Non verrà più mostrato.'),
+       box, cp, ok);
+}
+// --- Face ID / Touch ID (passkey con PRF)
+async function bioGetPrf(id, salt){
+  const a = await navigator.credentials.get({publicKey:{challenge:u8(32), rpId:location.hostname, allowCredentials:[{type:'public-key', id}],
+    userVerification:'required', timeout:60000, extensions:{prf:{eval:{first:salt}}}}});
+  const r = a.getClientExtensionResults().prf; if (!r || !r.results || !r.results.first) throw new Error('noprf');
+  return new Uint8Array(r.results.first);
+}
+async function bioEnable(dk){
+  const salt = u8(32);
+  const cred = await navigator.credentials.create({publicKey:{rp:{name:'Agenda', id:location.hostname}, user:{id:u8(16), name:'Agenda PSW', displayName:'Agenda · foglio PSW'},
+    challenge:u8(32), pubKeyCredParams:[{type:'public-key', alg:-7}, {type:'public-key', alg:-257}], timeout:60000,
+    authenticatorSelection:{authenticatorAttachment:'platform', residentKey:'preferred', userVerification:'required'}, extensions:{prf:{eval:{first:salt}}}}});
+  const ext = cred.getClientExtensionResults().prf;
+  if (!ext || ext.enabled === false) throw new Error('noprf');
+  const out = ext.results && ext.results.first ? new Uint8Array(ext.results.first) : await bioGetPrf(new Uint8Array(cred.rawId), salt);
+  data.psw.bio = {id:b64e(new Uint8Array(cred.rawId)), salt:b64e(salt), ...(await wrapWith(await kekFromPrf(out), dk))};
+  writeNow();
+}
+async function bioOffer(dk){ /* l'attivazione di Face ID si fa dal tasto in alto, con il foglio aperto */ }
+async function bioToggle(){
+  const st = pswState(); if (!pswKey || !st) return;
+  if (st.bio){ delete st.bio; writeNow(); toast('Face ID / Touch ID disattivato per il foglio PSW'); }
+  else {
+    try{ await bioEnable(pswKey); toast('Face ID / Touch ID attivo per il foglio PSW'); }
+    catch(e){ toast(e && e.message === 'noprf' ? 'Questo iPad non permette lo sblocco con Face ID nelle web app (serve iPadOS 18 o più recente): resta la password' : 'Face ID / Touch ID non attivato'); }
+  }
+  $('pswBio').textContent = st.bio ? 'Face ID attivo' : 'Attiva Face ID / Touch ID'; $('pswBio').classList.toggle('on', !!st.bio);
+}
+async function bioUnlock(err){
+  const st = pswState();
+  try{ const out = await bioGetPrf(b64d(st.bio.id), b64d(st.bio.salt)); const dk = await unwrapWith(await kekFromPrf(out), st.bio); pswShowSheet(dk); }
+  catch(e){ err.textContent = 'Sblocco con Face ID non riuscito: usa la password.'; }
+}
+// --- cambio password (foglio aperto)
+function pswChangeView(){
+  const st = pswState(), err = el('p', 'err');
+  const p1 = field('Nuova password'), p2 = field('Ripeti la nuova password'); p1.autocomplete = p2.autocomplete = 'new-password';
+  const key = pswKey;
+  const go = btn('Salva la nuova password', 'primary', async () => {
+    if (p1.value.length < 6){ err.textContent = 'La password deve avere almeno 6 caratteri.'; return; }
+    if (p1.value !== p2.value){ err.textContent = 'Le due password non coincidono.'; return; }
+    busy(go, true, 'Salvo…');
+    const s1 = u8(16); st.pw = {s:b64e(s1), ...(await wrapWith(await kekFromSecret(p1.value, s1), key))}; writeNow();
+    toast('Password aggiornata'); pswShowSheet(key);
+  });
+  const nc = btn('Genera un nuovo codice di recupero', '', async () => {
+    const code = newRecoveryCode(), s2 = u8(16);
+    st.rec = {s:b64e(s2), ...(await wrapWith(await kekFromSecret(normCode(code), s2), key))}; writeNow();
+    showCode(code, key);
+  });
+  card(el('h3', null, 'Cambia password'), el('p', null, 'Scegli la nuova password del foglio PSW. Il contenuto resta com’è.'), p1, p2, err, go, nc,
+       btn('Annulla', 'link', () => pswShowSheet(key)));
+}
+// --- apertura e chiusura
+function openPsw(){
+  $('pswOverlay').hidden = false;
+  pswGate(pswState() ? 'lock' : 'setup');
+}
+async function closePsw(){ await pswLock(); $('pswOverlay').hidden = true; renderAll(); }
+$('openPsw').onclick = openPsw;
+$('pswClose').onclick = closePsw;
+$('pswChange').onclick = pswChangeView;
+$('pswBio').onclick = bioToggle;
+// la password è chiesta a ogni apertura: se l'app va in background il foglio si blocca subito
+document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden' && !$('pswOverlay').hidden){ pswLock(); $('pswOverlay').hidden = true; } });
 </script>
 
 </body>
