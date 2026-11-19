@@ -663,7 +663,7 @@ body:has(#inkPanel:not([hidden])) .notes{padding-bottom:calc(136px + env(safe-ar
   background:color-mix(in srgb,var(--surface) 88%,transparent);border:1px solid var(--rule);box-shadow:0 6px 20px rgba(0,0,0,.12);display:flex;flex-direction:column;align-items:center;gap:16px;
   touch-action:none;-webkit-user-select:none;user-select:none;-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px)}
 .zoombar[hidden]{display:none}
-.zb-max,.zb-min{font:600 9.5px var(--f-body);color:var(--muted)}
+.zb-max,.zb-min{font:600 9.5px/1.15 var(--f-body);color:var(--muted);text-align:center}
 .zb-track{position:relative;width:6px;height:190px;border-radius:3px;background:var(--rule);cursor:pointer}
 .zb-track::before{content:'';position:absolute;inset:-6px -19px}
 .zb-fill{position:absolute;left:0;right:0;bottom:0;border-radius:3px;background:var(--ink)}
@@ -792,7 +792,7 @@ body:has(#inkPanel:not([hidden])) .notes{padding-bottom:calc(136px + env(safe-ar
     </div>
     <p class="err" id="bkErr" hidden></p>
     </div>
-    <div class="actions"><span class="ver" style="margin-right:auto;align-self:center">Agenda 1.31</span><button class="btn" id="appUpdate">Aggiorna app</button><button class="btn" id="menuClose">Chiudi</button></div>
+    <div class="actions"><span class="ver" style="margin-right:auto;align-self:center">Agenda 1.32</span><button class="btn" id="appUpdate">Aggiorna app</button><button class="btn" id="menuClose">Chiudi</button></div>
   </div>
 </div>
 
@@ -926,10 +926,10 @@ body:has(#inkPanel:not([hidden])) .notes{padding-bottom:calc(136px + env(safe-ar
     </div>
     </div>
     </div>
-    <div class="zoombar" id="zoomBar" role="slider" aria-label="Zoom del foglio" aria-valuemin="75" aria-valuemax="150" aria-valuenow="100" tabindex="0">
+    <div class="zoombar" id="zoomBar" role="slider" aria-label="Zoom del foglio" aria-valuemin="40" aria-valuemax="150" aria-valuenow="100" tabindex="0">
       <span class="zb-max">150%</span>
       <div class="zb-track" id="zbTrack"><i class="zb-fill" id="zbFill"></i><i class="zb-mark"></i><b class="zb-thumb" id="zbThumb"></b></div>
-      <span class="zb-min">75%</span>
+      <span class="zb-min" id="zbMin">Pagina<br>intera</span>
       <button class="zb-val" id="zbVal" type="button" aria-label="Riporta lo zoom al 100%">100%</button>
     </div>
     <button class="fab" id="addSheet" aria-label="Aggiungi foglio" hidden>+</button>
@@ -1936,9 +1936,13 @@ function fitNotesPage(light){
   const pw = NOTE_W * k;
   Object.assign(pg.style, {width:NOTE_W + 'px', height:(vh / k) + 'px', top:'0px', left:Math.max(0, (vw - pw) / 2) + 'px', transform:`scale(${k})`});
   view.scrollLeft = pw > vw ? Math.max(0, cx * pw - vw / 2) : 0;
+  if (userZoom * 100 <= ZMIN + .01 && !light){                   // pagina intera: allineo all'inizio della pagina in cui ero
+    const {grid0, P} = a4Geom(), n = Math.max(0, Math.floor((pg.scrollTop + 1) / P));
+    pg.scrollTop = n ? grid0 + n * P - 6 : 0;
+  }
   if (!light) notesInk.size();
 }
-if (window.ResizeObserver) new ResizeObserver(() => fitNotesPage()).observe($('pageCol'));
+if (window.ResizeObserver) new ResizeObserver(() => { if (typeof updZoomUI === 'function' && !$('notes').hidden) updZoomUI(); fitNotesPage(); }).observe($('pageCol'));
 portraitMQ.addEventListener?.('change', fitNotesPage);
 // fattore di scala del foglio (1 se non è rimpicciolito): serve a convertire i tocchi in coordinate del foglio
 const zk = o => (o && o.c && o.c.offsetWidth ? o.c.getBoundingClientRect().width / o.c.offsetWidth : 1) || 1;
@@ -4225,14 +4229,27 @@ document.addEventListener('pointerup', evUp);
 document.addEventListener('pointercancel', evUp);
 
 /* ===== 1.31 — cursore dello zoom (75–150%); cambiando foglio o riaprendo le note torna al 100% ===== */
-const ZMIN = 75, ZMAX = 150;
+// 1.32 — il minimo è la pagina A4 intera visibile (dipende da orientamento e schermo), comunque non oltre il 75%
+let ZMIN = 75; const ZMAX = 150;
+function zoomMin(){
+  const col = $('pageCol'), view = $('pageView'); if (!col || !col.clientWidth) return 75;
+  const vw = col.clientWidth, vh = view && view.clientHeight ? view.clientHeight : col.clientHeight - 90;
+  const {grid0, P} = a4Geom();                                   // altezza di una pagina A4 alla larghezza del foglio
+  const fitK = (vh - 6) / (grid0 + P), baseK = vw / NOTE_W;
+  return Math.max(25, Math.min(75, Math.floor(fitK / baseK * 100)));
+}
 function updZoomUI(){
+  ZMIN = zoomMin(); $('zoomBar').setAttribute('aria-valuemin', ZMIN);
+  if (userZoom * 100 < ZMIN) userZoom = ZMIN / 100;
   const v = Math.round(userZoom * 100), f = (v - ZMIN) / (ZMAX - ZMIN);
   $('zbThumb').style.top = ((1 - f) * 100) + '%'; $('zbFill').style.height = (f * 100) + '%';
-  $('zbVal').textContent = v + '%'; $('zoomBar').setAttribute('aria-valuenow', v);
+  $('zbVal').textContent = v <= ZMIN ? 'A4' : v + '%'; $('zoomBar').setAttribute('aria-valuenow', v);
+  $('zbVal').title = v <= ZMIN ? 'Pagina intera (' + v + '%)' : '';
   $('zbTrack').querySelector('.zb-mark').style.top = ((1 - (100 - ZMIN) / (ZMAX - ZMIN)) * 100) + '%';
 }
-function setZoom(v, light){ v = Math.min(ZMAX, Math.max(ZMIN, Math.round(v / 5) * 5));
+function setZoom(v, light){
+  ZMIN = zoomMin();
+  v = v - ZMIN < 3 ? ZMIN : Math.min(ZMAX, Math.max(ZMIN, Math.round(v / 5) * 5));   // in fondo: pagina intera esatta
   if (Math.abs(v - 100) < 4) v = 100;                          // "aggancio" al 100%
   userZoom = v / 100; updZoomUI(); fitNotesPage(light); }
 {
