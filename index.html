@@ -353,8 +353,8 @@ body.pasting .left,body.pasting .points,body.pasting .page{cursor:copy}
   background-color:transparent;background-image:linear-gradient(to bottom,transparent 31px,var(--rule) 31px);background-size:100% 32px;background-position:0 6px}
 /* 1.19 — verbale dello staff meeting a linguette */
 .page-col{width:min(860px,100%);height:100%;display:flex;flex-direction:column;min-height:0;min-width:0}
-.page-col > .page{width:100%;flex:1;height:auto;min-height:0}
-.page-col > .page{border-top:4px solid var(--tabc,var(--ink));border-top-left-radius:0;transition:border-color .2s}
+.page-col .page{width:100%;flex:1;height:auto;min-height:0}
+.page-col .page{border-top:4px solid var(--tabc,var(--ink));border-top-left-radius:0;transition:border-color .2s}
 .mtabs{display:flex;align-items:flex-end;gap:3px;flex:none;padding:6px 2px 0;overflow-x:auto;scrollbar-width:none}
 .mtabs[hidden]{display:none}
 .mtab{--c:var(--ink);flex:none;position:relative;height:40px;padding:0 24px 0 18px;border:1.5px solid var(--c);border-bottom:0;border-radius:12px 20px 0 0;
@@ -456,7 +456,7 @@ body:has(#inkPanel:not([hidden])) .notes{padding-bottom:calc(136px + env(safe-ar
   .mtabs .mtab[aria-selected="true"]{height:38px}
   .mtab-col{height:30px;padding:0 8px;font-size:12px}
   .page-col{position:relative}
-  .page-col.fit > .page{position:absolute;left:0;transform-origin:0 0;flex:none}
+  .page-col.fit .page{position:absolute;left:0;transform-origin:0 0;flex:none}
 }
 /* 1.21 — iPad in verticale: giorni sopra (larghi), punti sotto */
 @media (orientation:portrait) and (min-width:701px){
@@ -547,7 +547,7 @@ body:has(#inkPanel:not([hidden])) .notes{padding-bottom:calc(136px + env(safe-ar
 .ntop .nt-btn,.ntop .act,.ntop #sendActions{flex:none;height:36px;margin-bottom:6px;padding:0 14px;border-radius:10px;border:1px solid var(--rule);background:var(--surface);color:var(--text);font:600 14px var(--f-body);white-space:nowrap;min-height:0}
 .ntop .act.primary{background:var(--ink);border-color:var(--ink);color:var(--surface)}
 .ntop #sendActions{border-color:var(--ink);color:var(--ink)}
-.page-col.fit > .page{position:absolute;left:0;transform-origin:0 0;flex:none}
+.page-col.fit .page{position:absolute;left:0;transform-origin:0 0;flex:none}
 .page-col{position:relative}
 #notes #mIndex{position:fixed;left:0;top:0;bottom:0;z-index:62;width:min(340px,86vw);border-radius:0 16px 16px 0;border:0;
   box-shadow:12px 0 40px rgba(0,0,0,.22);transform:translateX(-104%);transition:transform .28s cubic-bezier(.2,.8,.2,1);
@@ -654,6 +654,23 @@ body:has(#inkPanel:not([hidden])) .notes{padding-bottom:calc(136px + env(safe-ar
 .evp.flying{position:fixed;z-index:90;pointer-events:none;width:auto;min-width:96px;max-width:200px;box-shadow:0 10px 26px rgba(20,26,70,.32);transform:translate(-50%,-50%) scale(1.06);background:var(--surface)}
 .day.drop-ev{outline:2px dashed var(--c,var(--ink));outline-offset:-3px;background-color:color-mix(in srgb,var(--c,var(--ink)) 8%,var(--card,var(--surface)))}
 :root[data-theme="dark"]{--card:var(--surface);--dot:rgba(255,255,255,.08);--card-sh:0 1px 3px rgba(0,0,0,.4);--spine:rgba(0,0,0,.55);--accent:#ff8a4c}
+
+/* ===== 1.31 — Zoom dei fogli (75–150%) con cursore laterale ===== */
+.page-view{flex:1;min-height:0;display:flex;flex-direction:column}
+.page-col.fit .page-view{position:absolute;left:0;right:0;bottom:0;overflow-x:auto;overflow-y:hidden;-webkit-overflow-scrolling:touch;display:block;scrollbar-width:none}
+.page-col.fit .page-view::-webkit-scrollbar{display:none}
+.zoombar{position:fixed;z-index:45;right:max(6px,env(safe-area-inset-right,0px));top:50%;transform:translateY(-50%);width:44px;padding:10px 0 8px;border-radius:22px;
+  background:color-mix(in srgb,var(--surface) 88%,transparent);border:1px solid var(--rule);box-shadow:0 6px 20px rgba(0,0,0,.12);display:flex;flex-direction:column;align-items:center;gap:16px;
+  touch-action:none;-webkit-user-select:none;user-select:none;-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px)}
+.zoombar[hidden]{display:none}
+.zb-max,.zb-min{font:600 9.5px var(--f-body);color:var(--muted)}
+.zb-track{position:relative;width:6px;height:190px;border-radius:3px;background:var(--rule);cursor:pointer}
+.zb-track::before{content:'';position:absolute;inset:-6px -19px}
+.zb-fill{position:absolute;left:0;right:0;bottom:0;border-radius:3px;background:var(--ink)}
+.zb-mark{position:absolute;left:-5px;right:-5px;height:2px;margin-top:-1px;background:var(--muted);opacity:.6;top:66.67%}
+.zb-thumb{position:absolute;left:50%;width:26px;height:26px;margin:-13px 0 0 -13px;border-radius:50%;background:var(--surface);border:2px solid var(--ink);box-shadow:0 2px 6px rgba(0,0,0,.2)}
+.zb-val{border:0;background:var(--sel);border-radius:9px;height:28px;width:38px;padding:0;font:700 11px var(--f-body);color:var(--text)}
+.zoombar.drag .zb-thumb{transform:scale(1.15)}
 </style>
 </head>
 <body>
@@ -775,7 +792,7 @@ body:has(#inkPanel:not([hidden])) .notes{padding-bottom:calc(136px + env(safe-ar
     </div>
     <p class="err" id="bkErr" hidden></p>
     </div>
-    <div class="actions"><span class="ver" style="margin-right:auto;align-self:center">Agenda 1.30</span><button class="btn" id="appUpdate">Aggiorna app</button><button class="btn" id="menuClose">Chiudi</button></div>
+    <div class="actions"><span class="ver" style="margin-right:auto;align-self:center">Agenda 1.31</span><button class="btn" id="appUpdate">Aggiorna app</button><button class="btn" id="menuClose">Chiudi</button></div>
   </div>
 </div>
 
@@ -901,11 +918,19 @@ body:has(#inkPanel:not([hidden])) .notes{padding-bottom:calc(136px + env(safe-ar
       <p>Non c’è ancora nessuno staff meeting.<br>Il verbale nuovo ha le linguette Partecipanti, Punti trattati e Azioni.</p>
       <button class="btn primary" id="mEmptyNew" type="button">+ Nuovo staff meeting</button>
     </div>
+    <div class="page-view" id="pageView">
     <div class="page">
       <div class="page-meta" id="pageMeta"></div>
       <textarea id="sheetText" aria-label="Testo del foglio" placeholder="Scrivi qui con la tastiera o con Apple Pencil…"></textarea>
       <div class="a4marks" id="a4marks" aria-hidden="true"></div>
     </div>
+    </div>
+    </div>
+    <div class="zoombar" id="zoomBar" role="slider" aria-label="Zoom del foglio" aria-valuemin="75" aria-valuemax="150" aria-valuenow="100" tabindex="0">
+      <span class="zb-max">150%</span>
+      <div class="zb-track" id="zbTrack"><i class="zb-fill" id="zbFill"></i><i class="zb-mark"></i><b class="zb-thumb" id="zbThumb"></b></div>
+      <span class="zb-min">75%</span>
+      <button class="zb-val" id="zbVal" type="button" aria-label="Riporta lo zoom al 100%">100%</button>
     </div>
     <button class="fab" id="addSheet" aria-label="Aggiungi foglio" hidden>+</button>
   </div>
@@ -1889,20 +1914,29 @@ document.addEventListener('pointerdown', e => { if (!tabColors.hidden && !e.targ
 const NOTE_W = 860, portraitMQ = matchMedia('(orientation:portrait) and (min-width:701px)');
 let notesZoom = 1;
 // 1.27 — la pagina A4 (larga 860) viene ingrandita o ridotta per riempire la larghezza, in orizzontale e in verticale
-function fitNotesPage(){
+let userZoom = 1;
+function fitNotesPage(light){
   const col = $('pageCol'), pg = document.querySelector('.page');
   if (!col || !pg) return;
   const on = !$('notes').hidden && !pg.hidden && col.clientWidth > 300 && innerWidth > 700;
+  $('zoomBar').hidden = !on;
   if (!on){
-    if (col.classList.contains('fit')){ col.classList.remove('fit'); notesZoom = 1; Object.assign(pg.style, {width:'', height:'', top:'', transform:''}); notesInk.size(); }
+    if (col.classList.contains('fit')){ col.classList.remove('fit'); notesZoom = 1; Object.assign(pg.style, {width:'', height:'', top:'', left:'', transform:''}); $('pageView').style.top = ''; notesInk.size(); }
     return;
   }
-  const k = col.clientWidth / NOTE_W, old = notesZoom; notesZoom = k;
+  const view = $('pageView');
   let top = 0;
   for (const id of ['ntop', 'mtabs']){ const e = $(id); if (e && !e.hidden && e.offsetHeight) top = Math.max(top, e.offsetTop + e.offsetHeight); }
   col.classList.add('fit');
-  Object.assign(pg.style, {width:NOTE_W + 'px', height:((col.clientHeight - top) / k) + 'px', top:top + 'px', transform:`scale(${k})`});
-  notesInk.size();
+  view.style.top = top + 'px';
+  const vw = col.clientWidth, vh = Math.max(100, col.clientHeight - top);
+  const oldK = notesZoom, k = vw / NOTE_W * userZoom;            // 100% = il foglio riempie la larghezza
+  const cx = view.scrollWidth > vw ? (view.scrollLeft + vw / 2) / (NOTE_W * oldK) : .5;   // mantiene al centro la stessa zona
+  notesZoom = k;
+  const pw = NOTE_W * k;
+  Object.assign(pg.style, {width:NOTE_W + 'px', height:(vh / k) + 'px', top:'0px', left:Math.max(0, (vw - pw) / 2) + 'px', transform:`scale(${k})`});
+  view.scrollLeft = pw > vw ? Math.max(0, cx * pw - vw / 2) : 0;
+  if (!light) notesInk.size();
 }
 if (window.ResizeObserver) new ResizeObserver(() => fitNotesPage()).observe($('pageCol'));
 portraitMQ.addEventListener?.('change', fitNotesPage);
@@ -1973,7 +2007,7 @@ function renderNotes(){
   const pg = document.querySelector('.page');
   const shown = cur.tabs ? cur.id + ':' + cur.tab : String(cur.id);
   if (pg.dataset.shown !== shown){                        // cambio foglio o linguetta: torna in cima con dissolvenza
-    pg.dataset.shown = shown; pg.scrollTop = 0;
+    pg.dataset.shown = shown; pg.scrollTop = 0; if (userZoom !== 1){ userZoom = 1; updZoomUI(); requestAnimationFrame(() => fitNotesPage()); }
     pg.classList.remove('flip'); void pg.offsetWidth; pg.classList.add('flip');
   }
   sizeSheet();
@@ -3024,6 +3058,7 @@ document.addEventListener('pointerdown', e => {
   if (active && e.pointerType === 'pen' && active.pen) endStroke({pointerId: active.id});
   if (e.pointerType === 'touch' || active) return;
   if (e.pointerType === 'mouse' && e.button !== 0) return;
+  if (e.pointerType === 'pen' && e.buttons === 0 && !(e.pressure > 0)) return;   // 1.31: penna sospesa, nessun contatto
   // Apple Pencil scrive sempre: in "Tastiera" passa da sola a "Solo penna". Solo "Penna → testo" la lascia a Scribble.
   const pencil = e.pointerType === 'pen';
   if (mode !== 'ink' && !(pencil && mode === 'kbd')) return;
@@ -3043,7 +3078,7 @@ document.addEventListener('pointerdown', e => {
   active.cur = {t: drawTool, c: drawTool === 'hl' ? hlColor : penColor,
                 w: drawTool === 'hl' ? HL_W[level.hl] : PEN_W[level.pen], pts:[toPt(e)]};
   if (drawTool !== 'hl') active.cur.k = penKind;
-  if (!(e.pressure > 0) && active.pen) active.cur.pts[0][2] = .5;
+  if (!(e.pressure > 0) && active.pen) active.cur.pts[0][2] = .3;
   active.last = Date.now();
   drawLive(o); active.drawn = 1;
 }, {capture:true});
@@ -3054,9 +3089,13 @@ window.addEventListener('pointermove', e => {
   const list = evs.length ? evs : [e];
   if (active.erasing){ for (const ev of list) eraseAt(active.o, toPt(ev)); active.o.scheduleLive(); return; }
   if (active.lasso){ for (const ev of list) active.lasso.push(toPt(ev)); active.o.scheduleLive(); return; }
+  // 1.31 — la Pencil non tocca più lo schermo (sospesa, nessun pulsante premuto): il tratto finisce qui.
+  // Così i movimenti della penna sollevata non allungano mai il tratto.
+  if (active.pen && e.buttons === 0 && !(e.pressure > 0)){ endStroke({pointerId: active.id}); return; }
   const pts = active.cur.pts;
   active.last = Date.now();
   for (const ev of list){
+    if (active.pen && ev.buttons === 0 && !(ev.pressure > 0)) continue;   // campione senza contatto
     const prev = pts[pts.length-1], q = toPt(ev, prev);
     if ((q[0]-prev[0])**2 + (q[1]-prev[1])**2 >= 0.04) pts.push(q);   // scarta solo i tremolii sotto 0,2 px
     else if (q[2] > prev[2]) prev[2] = q[2];                          // ...ma tiene conto della pressione
@@ -3075,7 +3114,13 @@ function endStroke(e){
     const s = active.cur;
     if (o.praf){ cancelAnimationFrame(o.praf); o.praf = 0; }
     // quando la Pencil si stacca, gli ultimi campioni quasi senza pressione creano un "uncino": li tolgo
-    if (active.pen && s.t !== 'hl') while (s.pts.length > 3 && s.pts[s.pts.length - 1][2] < .06) s.pts.pop();
+    if (active.pen && s.t !== 'hl'){
+      while (s.pts.length > 3 && s.pts[s.pts.length - 1][2] < .06) s.pts.pop();
+      while (s.pts.length > 3 && s.pts[0][2] < .04) s.pts.shift();     // anche all'appoggio: niente "codine" iniziali
+      // sfioramento involontario: pressione quasi nulla e tratto minuscolo → non lo salvo
+      const mp = Math.max(...s.pts.map(q => q[2] || 0)), bw = Math.max(...s.pts.map(q => q[0])) - Math.min(...s.pts.map(q => q[0])), bh = Math.max(...s.pts.map(q => q[1])) - Math.min(...s.pts.map(q => q[1]));
+      if (mp < .03 && bw < 3 && bh < 3){ active = null; penBusy = false; drawLive(o); return; }
+    }
     if (o.rows){                                       // il tratto si aggancia al punto della lista
       s.r = o.rowAt(s.pts[0][1]);
       const top = o.tops[s.r] || 0;
@@ -4178,6 +4223,30 @@ function evUp(e){
 }
 document.addEventListener('pointerup', evUp);
 document.addEventListener('pointercancel', evUp);
+
+/* ===== 1.31 — cursore dello zoom (75–150%); cambiando foglio o riaprendo le note torna al 100% ===== */
+const ZMIN = 75, ZMAX = 150;
+function updZoomUI(){
+  const v = Math.round(userZoom * 100), f = (v - ZMIN) / (ZMAX - ZMIN);
+  $('zbThumb').style.top = ((1 - f) * 100) + '%'; $('zbFill').style.height = (f * 100) + '%';
+  $('zbVal').textContent = v + '%'; $('zoomBar').setAttribute('aria-valuenow', v);
+  $('zbTrack').querySelector('.zb-mark').style.top = ((1 - (100 - ZMIN) / (ZMAX - ZMIN)) * 100) + '%';
+}
+function setZoom(v, light){ v = Math.min(ZMAX, Math.max(ZMIN, Math.round(v / 5) * 5));
+  if (Math.abs(v - 100) < 4) v = 100;                          // "aggancio" al 100%
+  userZoom = v / 100; updZoomUI(); fitNotesPage(light); }
+{
+  let zd = null;
+  const valAt = y => { const r = $('zbTrack').getBoundingClientRect(); const f = 1 - Math.min(1, Math.max(0, (y - r.top) / r.height)); return ZMIN + f * (ZMAX - ZMIN); };
+  $('zbTrack').addEventListener('pointerdown', e => { e.preventDefault(); e.stopPropagation(); zd = e.pointerId; try{ $('zbTrack').setPointerCapture(e.pointerId); }catch(_){} $('zoomBar').classList.add('drag'); setZoom(valAt(e.clientY), true); });
+  $('zbTrack').addEventListener('pointermove', e => { if (zd !== e.pointerId) return; e.preventDefault(); setZoom(valAt(e.clientY), true); });
+  const end = e => { if (zd !== e.pointerId) return; zd = null; $('zoomBar').classList.remove('drag'); fitNotesPage(); };
+  $('zbTrack').addEventListener('pointerup', end); $('zbTrack').addEventListener('pointercancel', end);
+  $('zbVal').onclick = () => setZoom(100);
+  $('zoomBar').addEventListener('keydown', e => { if (e.key === 'ArrowUp' || e.key === '+'){ setZoom(userZoom * 100 + 5); e.preventDefault(); } if (e.key === 'ArrowDown' || e.key === '-'){ setZoom(userZoom * 100 - 5); e.preventDefault(); } });
+  new MutationObserver(() => { if (!$('notes').hidden){ userZoom = 1; updZoomUI(); } else $('zoomBar').hidden = true; }).observe($('notes'), {attributes:true, attributeFilter:['hidden']});
+  updZoomUI();
+}
 </script>
 
 </body>
