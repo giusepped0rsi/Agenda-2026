@@ -624,6 +624,36 @@ body:has(#inkPanel:not([hidden])) .notes{padding-bottom:calc(136px + env(safe-ar
   background:linear-gradient(to right,transparent 55px,var(--margin) 55px,var(--margin) 56px,transparent 56px),radial-gradient(circle,var(--dot,#d9d9d4) 1px,transparent 1.3px) 0 6px/16px 16px,var(--surface);background-attachment:local;box-shadow:var(--card-sh,0 1px 3px rgba(0,0,0,.08))}
 .psw-page textarea{display:block;width:100%;min-height:1216px;border:0;resize:none;background:transparent;color:var(--text);font:16px/32px var(--f-body);padding:6px 24px 40px 72px;outline:none;
   background-image:linear-gradient(to bottom,transparent 31px,color-mix(in srgb,var(--rule) 75%,transparent) 31px);background-size:100% 32px;background-position:0 6px;background-attachment:local}
+
+/* ===== 1.30 — Impostazioni, trascinamento eventi, scorrimento con il dito ===== */
+.modal.settings{width:min(640px,100%)}
+.set-tabs{display:flex;gap:4px;padding:4px;border-radius:12px;background:var(--sel);margin:2px 0 6px}
+.set-tab{flex:1;height:38px;border:0;border-radius:9px;background:none;font:600 14px var(--f-body);color:var(--text)}
+.set-tab[aria-selected="true"]{background:var(--surface);box-shadow:0 1px 3px rgba(0,0,0,.12)}
+.set-sec[hidden]{display:none}
+.set-sec{display:flex;flex-direction:column;gap:14px;min-height:240px}
+.set-row{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.set-row > .lbl{width:150px;flex:none;font-weight:600;font-size:14px}
+.set-row .hint{flex-basis:100%;margin:-6px 0 0 162px;font-size:12.5px;color:var(--muted)}
+.seg{display:inline-flex;gap:2px;padding:3px;border-radius:10px;background:var(--sel)}
+.seg button{height:34px;padding:0 14px;border:0;border-radius:8px;background:none;font:600 13.5px var(--f-body);color:var(--text)}
+.seg button[aria-pressed="true"]{background:var(--ink);color:var(--surface)}
+.seg .sw-c{width:22px;height:22px;border-radius:50%;display:inline-block;vertical-align:middle;border:2px solid var(--surface);box-shadow:0 0 0 1px var(--rule)}
+.seg .lv-d{display:inline-block;border-radius:50%;background:currentColor;vertical-align:middle}
+.switch{position:relative;width:50px;height:30px;border-radius:15px;border:0;background:var(--rule);flex:none;transition:background .18s}
+.switch::after{content:'';position:absolute;left:3px;top:3px;width:24px;height:24px;border-radius:50%;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.25);transition:transform .18s}
+.switch[aria-checked="true"]{background:#2e9e5b}
+.switch[aria-checked="true"]::after{transform:translateX(20px)}
+#setCol .tc-row{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+#setCol .tc-row span{width:150px;font-size:14px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#setCol .tc-h{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-top:4px}
+#setCol .sw{width:28px;height:28px;border-radius:50%;border:2px solid var(--surface);box-shadow:0 0 0 1px var(--rule);padding:0}
+#setCol .sw[aria-pressed="true"]{box-shadow:0 0 0 2.5px var(--text)}
+.evp{-webkit-touch-callout:none;-webkit-user-select:none;user-select:none}
+.evp.lifting{opacity:.35}
+.evp.flying{position:fixed;z-index:90;pointer-events:none;width:auto;min-width:96px;max-width:200px;box-shadow:0 10px 26px rgba(20,26,70,.32);transform:translate(-50%,-50%) scale(1.06);background:var(--surface)}
+.day.drop-ev{outline:2px dashed var(--c,var(--ink));outline-offset:-3px;background-color:color-mix(in srgb,var(--c,var(--ink)) 8%,var(--card,var(--surface)))}
+:root[data-theme="dark"]{--card:var(--surface);--dot:rgba(255,255,255,.08);--card-sh:0 1px 3px rgba(0,0,0,.4);--spine:rgba(0,0,0,.55);--accent:#ff8a4c}
 </style>
 </head>
 <body>
@@ -709,8 +739,18 @@ body:has(#inkPanel:not([hidden])) .notes{padding-bottom:calc(136px + env(safe-ar
 
 <!-- BACKUP E RIPRISTINO -->
 <div class="overlay" id="menuOverlay" hidden>
-  <div class="modal" role="dialog" aria-labelledby="bkTitle">
-    <h3 id="bkTitle">Backup</h3>
+  <div class="modal settings" role="dialog" aria-labelledby="bkTitle">
+    <h3 id="bkTitle">Impostazioni</h3>
+    <div class="set-tabs" role="tablist" aria-label="Sezioni delle impostazioni">
+      <button class="set-tab" data-set="pen" role="tab">Penna</button>
+      <button class="set-tab" data-set="col" role="tab">Colori</button>
+      <button class="set-tab" data-set="look" role="tab">Aspetto e uso</button>
+      <button class="set-tab" data-set="bk" role="tab">Backup</button>
+    </div>
+    <div class="set-sec" id="setPen" data-sec="pen" hidden></div>
+    <div class="set-sec" id="setCol" data-sec="col" hidden></div>
+    <div class="set-sec" id="setLook" data-sec="look" hidden></div>
+    <div class="set-sec" id="setBk" data-sec="bk">
     <p class="bk-text" id="bkInfo"></p>
     <p class="bk-text" id="persistInfo"></p>
     <div class="field">
@@ -734,7 +774,8 @@ body:has(#inkPanel:not([hidden])) .notes{padding-bottom:calc(136px + env(safe-ar
       </div>
     </div>
     <p class="err" id="bkErr" hidden></p>
-    <div class="actions"><span class="ver" style="margin-right:auto;align-self:center">Agenda 1.29</span><button class="btn" id="appUpdate">Aggiorna app</button><button class="btn" id="menuClose">Chiudi</button></div>
+    </div>
+    <div class="actions"><span class="ver" style="margin-right:auto;align-self:center">Agenda 1.30</span><button class="btn" id="appUpdate">Aggiorna app</button><button class="btn" id="menuClose">Chiudi</button></div>
   </div>
 </div>
 
@@ -924,7 +965,7 @@ body:has(#inkPanel:not([hidden])) .notes{padding-bottom:calc(136px + env(safe-ar
     </div>
     <div class="acts" id="dockMain" role="group" aria-label="Comandi">
       <button class="act" id="openExport" aria-label="Esporta in PDF">Export</button>
-      <button class="act" id="openMenu" aria-label="Backup e ripristino">Backup<i class="badge" id="bkBadge" hidden></i></button>
+      <button class="act" id="openMenu" aria-label="Impostazioni: penna, colori, aspetto e backup">Impostazioni<i class="badge" id="bkBadge" hidden></i></button>
       <button class="act psw-btn" id="openPsw" aria-label="Foglio protetto PSW">PSW</button>
       <button class="act strong" id="openNotes">Note</button>
       <button class="act primary" id="openEvent">Eventi</button>
@@ -1143,7 +1184,8 @@ function dayRow(d, i){
     if (!ev.allDay) b.dataset.tm = ev.time;
     const label = `${typeName(ev.type)}${ev.allDay ? ', tutto il giorno' : ' alle ' + ev.time}${ev.desc ? ': ' + ev.desc : ''}${ev.calAt ? ' (nel Calendario)' : ''}`;
     b.title = label; b.setAttribute('aria-label', label);
-    b.onclick = e => { e.stopPropagation(); openEvent(ev); };
+    b.onclick = e => { e.stopPropagation(); if (Date.now() - evDragEnd < 450) return; openEvent(ev); };
+    b.addEventListener('pointerdown', e => evDown(e, b, ev));
     evcol.append(b);
   }
   if (k === keyOf(today)) placeNowLine(evcol);
@@ -1320,7 +1362,7 @@ function halfPlane(poly, m, n, sign){
 const polyCss = p => p.length > 2 ? `polygon(${p.map(q => q[0].toFixed(1) + 'px ' + q[1].toFixed(1) + 'px').join(',')})` : 'polygon(0 0,0 0,0 0)';
 function pageFlip(dir, update){
   const sheet = document.querySelector('main.sheet');
-  if (!sheet || matchMedia('(prefers-reduced-motion: reduce)').matches){ update(); return false; }
+  if (!sheet || matchMedia('(prefers-reduced-motion: reduce)').matches || (typeof LS !== 'undefined' && LS.get('flip', '1') !== '1')){ update(); return false; }
   if (flipEnd) flipEnd();
   const r = sheet.getBoundingClientRect(), W = r.width, H = r.height, hw = W / 2;
   const A = snapSheet(sheet);                               // settimana di prima
@@ -2936,7 +2978,7 @@ function drawLive(o){
 /* ---------- Input: penna disegna, dita navigano ---------- */
 function inkAt(t){
   if (!t || !t.closest) return null;
-  if (t.closest('.num,.mark,#numMenu,.a4add')) return null;
+  if (t.closest('.num,.mark,#numMenu,.a4add,.evp')) return null;
   if (!$('pswOverlay').hidden) return (t.closest('.psw-page') && typeof pswInk !== 'undefined' && pswKey) ? pswInk : null;   // i numeri dei punti si toccano, non si scrive sopra
   if (!$('notes').hidden) return t.closest('.page') ? notesInk : null;
   if (!$('eventOverlay').hidden || t.closest('.add-point')) return null;
@@ -2949,7 +2991,7 @@ const hoverDot = el('div', 'pen-hover'); hoverDot.hidden = true; hoverDot.setAtt
 let hoverT = 0;
 function hideHover(){ hoverDot.hidden = true; clearTimeout(hoverT); }
 window.addEventListener('pointermove', e => {
-  if (e.pointerType !== 'pen' || active || e.buttons || mode === 'scribble'){ if (!hoverDot.hidden && (active || e.buttons)) hideHover(); return; }
+  if (e.pointerType !== 'pen' || active || e.buttons || mode === 'scribble' || (typeof LS !== 'undefined' && LS.get('hover', '1') !== '1')){ if (!hoverDot.hidden && (active || e.buttons)) hideHover(); return; }
   const o = inkAt(e.target); if (!o){ hideHover(); return; }
   const k = zk(o), er = tool === 'eraser', ls = tool === 'lasso';
   const w = (er ? 18 : ls ? 8 : drawTool === 'hl' ? HL_W[level.hl] : PEN_W[level.pen]) * k;
@@ -3512,9 +3554,11 @@ async function updatePersistUI(){
     ? 'Archivio protetto: l’iPad non cancella i dati dell’agenda per liberare spazio.'
     : 'Archivio standard: fai un backup ogni settimana. Installata sulla schermata Home l’agenda è più protetta.';
 }
-function openMenu(){
+function openMenu(tab){
   $('bkConfirm').hidden = true; $('bkErr').hidden = true;
-  updateBackupUI(); updatePersistUI(); fillSnapshots(); $('menuOverlay').hidden = false;
+  updateBackupUI(); updatePersistUI(); fillSnapshots();
+  setTab2(typeof tab === 'string' ? tab : (!$('bkBadge').hidden ? 'bk' : (setLast || 'pen')));
+  $('menuOverlay').hidden = false;
 }
 $('openMenu').onclick = openMenu;
 $('menuClose').onclick = () => { $('menuOverlay').hidden = true; };
@@ -4000,6 +4044,140 @@ $('pswChange').onclick = pswChangeView;
 $('pswBio').onclick = bioToggle;
 // la password è chiesta a ogni apertura: se l'app va in background il foglio si blocca subito
 document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden' && !$('pswOverlay').hidden){ pswLock(); $('pswOverlay').hidden = true; } });
+
+/* ===== 1.30 — Impostazioni: Penna · Colori · Aspetto e uso · Backup ===== */
+const LS = {get:(k, d) => { try{ const v = localStorage.getItem('agendaIpad.' + k); return v == null ? d : v; }catch(_){ return d; } },
+            set:(k, v) => { try{ localStorage.setItem('agendaIpad.' + k, v); }catch(_){} }};
+let setLast = null;
+function setTab2(t){
+  setLast = t;
+  document.querySelectorAll('.set-tab').forEach(b => b.setAttribute('aria-selected', b.dataset.set === t));
+  document.querySelectorAll('.set-sec').forEach(x => x.hidden = x.dataset.sec !== t);
+  if (t === 'pen') renderSetPen(); if (t === 'col') renderSetCol(); if (t === 'look') renderSetLook();
+}
+document.querySelectorAll('.set-tab').forEach(b => b.onclick = () => setTab2(b.dataset.set));
+const segOf = (opts, cur, on) => { const g = el('div', 'seg');
+  for (const [v, label] of opts){ const b = el('button'); b.type = 'button'; if (label instanceof Node) b.append(label); else b.textContent = label;
+    b.setAttribute('aria-pressed', String(v) === String(cur)); b.onclick = () => { on(v); g.querySelectorAll('button').forEach(x => x.setAttribute('aria-pressed', x === b)); }; g.append(b); }
+  return g; };
+const rowOf = (label, ctl, hint) => { const r = el('div', 'set-row'); r.append(el('span', 'lbl', label), ctl); if (hint) r.append(el('span', 'hint', hint)); return r; };
+const switchOf = (on, fn) => { const b = el('button', 'switch'); b.type = 'button'; b.setAttribute('role', 'switch'); b.setAttribute('aria-checked', on);
+  b.onclick = () => { const v = b.getAttribute('aria-checked') !== 'true'; b.setAttribute('aria-checked', v); fn(v); }; return b; };
+function renderSetPen(){
+  const dot = w => { const d = el('span', 'lv-d'); d.style.width = d.style.height = (3 + w * 1.6) + 'px'; return d; };
+  const col = c => { const d = el('span', 'sw-c'); d.style.background = `var(--pen-${c})`; return d; };
+  $('setPen').replaceChildren(
+    rowOf('Tipo di tratto', segOf([['b', 'Sfera'], ['f', 'Stilografica']], penKind, v => setPenKind(v)),
+          'Sfera: tratto uniforme e nitido. Stilografica: lo spessore segue la pressione.'),
+    rowOf('Spessore iniziale', segOf([0, 1, 2, 3, 4].map(i => [i, dot(PEN_W[i])]), LS.get('penLevel', '1'), v => { LS.set('penLevel', v); level.pen = +v; updatePanel(); })),
+    rowOf('Colore iniziale', segOf([['nero', col('nero')], ['rosso', col('rosso')], ['blu', col('blu')]], LS.get('penColor0', 'nero'), v => { LS.set('penColor0', v); setTool('pen', v); }),
+          'È il colore con cui la penna parte a ogni apertura dell’app.'),
+    rowOf('Anteprima della punta', switchOf(LS.get('hover', '1') === '1', v => { LS.set('hover', v ? '1' : '0'); if (!v) hideHover(); }),
+          'Con Apple Pencil sospesa sullo schermo compare un cerchio con colore e spessore.'));
+}
+function renderSetCol(){
+  const box = $('setCol');
+  const swRow = (name, curC, set) => {
+    const row = el('div', 'tc-row'); row.append(el('span', null, name));
+    for (const c of TAB_SWATCH){
+      const b = el('button', 'sw'); b.type = 'button'; b.style.background = c; b.setAttribute('aria-label', `${name}: colore ${c}`);
+      b.setAttribute('aria-pressed', curC === c); b.onclick = () => { set(c); save(); if (!$('notes').hidden) renderNotes(); renderSetCol(); };
+      row.append(b);
+    }
+    return row;
+  };
+  ensureBooks();
+  box.replaceChildren(el('div', 'tc-h', 'Quaderni'), ...data.books.map(b => swRow(b.name, bookColor(b), c => { b.color = c; })),
+    el('div', 'tc-h', 'Linguette del verbale'),
+    ...MTABS.map(T => swRow(T.name, tabColor(T.k), c => { const pr = (data.prefs ||= {cal:true, alarm:'15', alarmDay:'same8'}); (pr.tabColors ||= {})[T.k] = c; })));
+}
+function applyTheme(){ const t = LS.get('theme', 'auto'); if (t === 'auto') delete document.documentElement.dataset.theme; else document.documentElement.dataset.theme = t; }
+function renderSetLook(){
+  $('setLook').replaceChildren(
+    rowOf('Tema', segOf([['auto', 'Automatico'], ['light', 'Chiaro'], ['dark', 'Scuro']], LS.get('theme', 'auto'), v => { LS.set('theme', v); applyTheme(); renderAll(); }),
+          'Automatico segue la modalità chiara o scura dell’iPad.'),
+    rowOf('Giro di pagina animato', switchOf(LS.get('flip', '1') === '1', v => LS.set('flip', v ? '1' : '0')),
+          'L’effetto pagina che si sfoglia quando cambi settimana.'),
+    rowOf('Cambia settimana col dito', switchOf(LS.get('swipe', '1') === '1', v => LS.set('swipe', v ? '1' : '0')),
+          'Scorri con un dito verso sinistra (settimana dopo) o verso destra (settimana prima).'),
+    rowOf('Sposta eventi', switchOf(LS.get('evdrag', '1') === '1', v => LS.set('evdrag', v ? '1' : '0')),
+          'Tieni premuto un evento nella colonna Eventi e trascinalo su un altro giorno.'));
+}
+// preferenze applicate all'avvio
+applyTheme();
+{ const lv = +LS.get('penLevel', '1'); if (lv >= 0 && lv <= 4) level.pen = lv; const c0 = LS.get('penColor0', 'nero'); if (['nero', 'rosso', 'blu'].includes(c0)) penColor = c0; updatePanel(); }
+
+/* ===== 1.30 — Cambio settimana con il dito (scorrimento orizzontale sull'agenda) ===== */
+{
+  let sw = null;
+  const blocked = () => !$('notes').hidden || !$('pswOverlay').hidden || !$('yearOv').hidden || document.querySelector('.overlay:not([hidden])') || numDrag || evDrag || penBusy;
+  document.addEventListener('touchstart', e => {
+    sw = null;
+    if (LS.get('swipe', '1') !== '1' || e.touches.length !== 1 || blocked()) return;
+    const t = e.touches[0]; if (t.touchType === 'stylus') return;
+    const tg = e.target;
+    if (!tg.closest || !tg.closest('main.sheet') || tg.closest('.num,.mark,.evp,input,select,.cal-head,.right-head')) return;
+    sw = {x:t.clientX, y:t.clientY, t:Date.now()};
+  }, {passive:true});
+  document.addEventListener('touchmove', e => {
+    if (!sw || e.touches.length !== 1) { sw = null; return; }
+    const t = e.touches[0], dx = t.clientX - sw.x, dy = t.clientY - sw.y;
+    if (Math.abs(dy) > 46 && Math.abs(dy) > Math.abs(dx)) sw = null;     // è uno scorrimento verticale
+  }, {passive:true});
+  document.addEventListener('touchend', e => {
+    const s0 = sw; sw = null; if (!s0 || blocked()) return;
+    const t = e.changedTouches[0], dx = t.clientX - s0.x, dy = t.clientY - s0.y, dt = Date.now() - s0.t;
+    if (Math.abs(dx) > 80 && Math.abs(dx) > Math.abs(dy) * 2.2 && dt < 800){
+      document.activeElement && document.activeElement.blur && document.activeElement.blur();
+      $(dx < 0 ? 'nextWeek' : 'prevWeek').click();
+    }
+  }, {passive:true});
+}
+
+/* ===== 1.30 — Eventi trascinabili: tieni premuto e sposta su un altro giorno ===== */
+let evDrag = null, evDragEnd = 0;
+function evDown(e, b, ev){
+  if (LS.get('evdrag', '1') !== '1' || (e.pointerType === 'mouse' && e.button !== 0)) return;
+  const d = {b, ev, id:e.pointerId, x0:e.clientX, y0:e.clientY, on:false, over:null};
+  d.tm = setTimeout(() => {                                     // pressione lunga: si solleva
+    if (evDrag !== d) return;
+    d.on = true; b.classList.add('lifting');
+    d.fly = b.cloneNode(true); d.fly.classList.add('flying'); d.fly.classList.remove('lifting');
+    d.fly.style.left = d.x + 'px'; d.fly.style.top = d.y + 'px'; document.body.append(d.fly);
+    d.fly.animate?.([{transform:'translate(-50%,-50%) scale(.9)'}, {transform:'translate(-50%,-50%) scale(1.06)'}], {duration:160, easing:'ease-out'});
+    try{ b.setPointerCapture(d.id); }catch(_){}
+    if (navigator.vibrate) navigator.vibrate(10);
+  }, 420);
+  d.x = e.clientX; d.y = e.clientY;
+  evDrag = d;
+}
+document.addEventListener('pointermove', e => {
+  const d = evDrag; if (!d || e.pointerId !== d.id) return;
+  d.x = e.clientX; d.y = e.clientY;
+  if (!d.on){ if (Math.hypot(e.clientX - d.x0, e.clientY - d.y0) > 9){ clearTimeout(d.tm); evDrag = null; } return; }
+  e.preventDefault();
+  d.fly.style.left = e.clientX + 'px'; d.fly.style.top = e.clientY + 'px';
+  d.fly.style.visibility = 'hidden'; const sec = dayUnder(e.clientX, e.clientY); d.fly.style.visibility = '';
+  if (sec !== d.over){ d.over?.classList.remove('drop-ev'); if (sec){ sec.classList.add('drop-ev'); sec.style.setProperty('--c', typeColor(d.ev.type)); } d.over = sec; }
+}, {passive:false});
+document.addEventListener('touchmove', e => { if (evDrag && evDrag.on) e.preventDefault(); }, {passive:false, capture:true});
+function evUp(e){
+  const d = evDrag; if (!d || e.pointerId !== d.id) return;
+  clearTimeout(d.tm); evDrag = null;
+  if (!d.on) return;
+  evDragEnd = Date.now();
+  d.fly.remove(); d.b.classList.remove('lifting'); d.over?.classList.remove('drop-ev');
+  const sec = e.type === 'pointerup' ? d.over : null;
+  if (!sec || sec.dataset.day === d.ev.date){ return; }
+  const ev = d.ev, from = ev.date, to = sec.dataset.day;
+  const delta = Math.round((fromKey(to) - fromKey(from)) / 864e5);
+  ev.date = to; if (ev.end) ev.end = keyOf(addDays(fromKey(ev.end), delta));
+  for (const n of data.notes || []) if (n.eventId === ev.id && n.date === from) n.date = to;   // il verbale collegato segue la riunione
+  save(); renderAll();
+  toast(`Evento «${typeName(ev.type)}» spostato a ${fmt(fromKey(to), {weekday:'long', day:'numeric', month:'long'})}` + (ev.calAt ? ' · aggiornalo anche nel Calendario' : ''));
+}
+document.addEventListener('pointerup', evUp);
+document.addEventListener('pointercancel', evUp);
 </script>
 
 </body>
